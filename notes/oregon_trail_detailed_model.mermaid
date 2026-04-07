@@ -1,0 +1,18 @@
+---
+config:
+  layout: dagre
+  theme: mc
+  look: classic
+---
+flowchart TB
+    TUR["Total Up Resources"] --> StopFort["Stop at Fort"] & Hunt["Hunt"] & Continue["Continue"]
+    StopFort --> Eat["Eat"]
+    Hunt --> Eat
+    Continue --> Eat
+    Eat --> Riders["Attacked By Riders"] & Misfortunes1["One of These Misfortunes Occurs:\nbroken wagon wheel, broken arm,\nchild gets lost, heavy rains,\nfire in wagon, snakebite,\nwild animals attack, hail storm,\nox injured, ox wanders off,\nbad water, bandits attack,\nfog, wagon swamped in river,\ncold weather"]
+    Riders --> TUR & Misfortunes1 & Illness["Illness"] & Mountains["Mountains"]
+    Misfortunes1 --> TUR & Illness & Mountains
+    Illness --> TUR & Mountains
+    Mountains --> TUR & Misfortunes2["One of These Misfortunes Occurs:\nslowed down, wagon damaged, get lost"] & Blizzard["Blizzard"]
+    Misfortunes2 --> TUR & Blizzard
+    Blizzard --> TUR & Illness
