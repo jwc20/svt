@@ -13,3 +13,9 @@
 
 - Read through magazine article about the original Oregon Trail; took notes
 - Decided that I should create a simple CLI version before integrating Bubble Tea and WIsh
+- Had trouble deciding on how to structure the project
+  - decided to create the Oregon Trail clone first and make decisions from there
+
+## Day 3
+
+- kept working on the CLI game
