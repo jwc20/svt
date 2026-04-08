@@ -15,6 +15,7 @@
 - Decided that I should create a simple CLI version before integrating Bubble Tea and WIsh
 - Had trouble deciding on how to structure the project
   - decided to create the Oregon Trail clone first and make decisions from there
+    - created new repos for svt and oregon trail games to separate game logic  
 
 ## Day 3
 
