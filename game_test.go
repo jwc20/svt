@@ -99,3 +99,13 @@ func TestFinalizePurchase(t *testing.T) {
 		assert.False(t, ok, "expected false for overspent")
 	})
 }
+
+func TestApplyEating(t *testing.T) {
+	gs := InitState()
+	gs.Inventory.Food = 100
+	ApplyEating(&gs, 2) // Moderately (2): 18 food eaten
+	// gs.Inventory.Food - 18 <=> 100 - 18 = 82 food remaining
+
+	assert.Equal(t, 2, gs.Trip.EatingChoice, "eating choice should be 2")
+	assert.Equal(t, 82, gs.Inventory.Food, "food should be 82")
+}

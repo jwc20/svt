@@ -122,3 +122,11 @@ func FinalizePurchases(gs *GameState) (bool, int) {
 	gs.Player.Cash = remaining
 	return true, remaining
 }
+
+func ApplyEating(gs *GameState, choice int) {
+	if choice < 1 || choice > 3 {
+		choice = 2
+	}
+	gs.Trip.EatingChoice = choice
+	gs.Inventory.Food -= 8 + 5*choice
+}
