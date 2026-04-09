@@ -25,10 +25,18 @@ func TestInitState(t *testing.T) {
 }
 
 func TestSetShootingLevel(t *testing.T) {
-	t.Run("valid", func(t *testing.T) {
+	t.Run("shooting level is valid", func(t *testing.T) {
 		gs := InitState()
 		ok := SetShootingLevel(&gs, 3)
 		assert.True(t, ok, "expected ok")
 		assert.Equal(t, 3, gs.Player.ShootingLevel, "shooting level should be 3")
+	})
+	t.Run("shooting level too low", func(t *testing.T) {
+		gs := InitState()
+		assert.False(t, SetShootingLevel(&gs, 0), "expected false")
+	})
+	t.Run("shooting level is too high", func(t *testing.T) {
+		gs := InitState()
+		assert.False(t, SetShootingLevel(&gs, 6), "expected false")
 	})
 }
