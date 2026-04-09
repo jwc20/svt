@@ -23,3 +23,12 @@ func TestInitState(t *testing.T) {
 	assert.Zero(t, gs.Trip.Mileage, "initial mileage should be 0")
 	assert.False(t, gs.Flags.Injured, "initial injury flag should be false")
 }
+
+func TestSetShootingLevel(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		gs := InitState()
+		ok := SetShootingLevel(&gs, 3)
+		assert.True(t, ok, "expected ok")
+		assert.Equal(t, 3, gs.Player.ShootingLevel, "shooting level should be 3")
+	})
+}

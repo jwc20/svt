@@ -69,3 +69,11 @@ func InitState() GameState {
 		Trip:   TripState{FortAvailable: true},
 	}
 }
+
+func SetShootingLevel(gs *GameState, level int) bool {
+	if level < 1 || level > 5 {
+		return false
+	}
+	gs.Player.ShootingLevel = level
+	return true
+}
