@@ -130,3 +130,13 @@ func ApplyEating(gs *GameState, choice int) {
 	gs.Trip.EatingChoice = choice
 	gs.Inventory.Food -= 8 + 5*choice
 }
+
+func AdvanceMileage(gs *GameState) {
+	gs.Trip.PreviousMileage = gs.Trip.Mileage
+	r := GetRandomInt(10) + 1
+	miles := 200 + (gs.Inventory.Oxen-220)/5 + r*10
+	if gs.Trip.ActionChoice != 1 {
+		miles /= 2
+	}
+	gs.Trip.Mileage += miles
+}

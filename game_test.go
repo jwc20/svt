@@ -109,3 +109,13 @@ func TestApplyEating(t *testing.T) {
 	assert.Equal(t, 2, gs.Trip.EatingChoice, "eating choice should be 2")
 	assert.Equal(t, 82, gs.Inventory.Food, "food should be 82")
 }
+
+func TestAdvanceMileage(t *testing.T) {
+	gs := InitState()
+	gs.Inventory.Oxen = 250
+	gs.Trip.ActionChoice = 1
+	AdvanceMileage(&gs)
+	if gs.Trip.Mileage <= 0 {
+		t.Errorf("mileage should be > 0, got %d", gs.Trip.Mileage)
+	}
+}
