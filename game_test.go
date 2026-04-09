@@ -119,3 +119,28 @@ func TestAdvanceMileage(t *testing.T) {
 		t.Errorf("mileage should be > 0, got %d", gs.Trip.Mileage)
 	}
 }
+
+func TestGenerateEvent(t *testing.T) {
+	gs := InitState()
+	gs.Inventory.Food = 100
+	gs.Inventory.Ammo = 50
+	gs.Inventory.Miscellaneous = 30
+	gs.Inventory.Clothing = 20
+	gs.Trip.Mileage = 500
+
+	originalFood := gs.Inventory.Food
+	originalMileage := gs.Trip.Mileage
+	changed := false
+	for i := 0; i < 50; i++ {
+		GenerateEvent(&gs)
+		if gs.Inventory.Food != originalFood ||
+			gs.Trip.Mileage != originalMileage ||
+			gs.Flags.Injured || gs.Flags.Ill {
+			changed = true
+			break
+		}
+	}
+	if !changed {
+		t.Error("expected at least one event to change game state")
+	}
+}

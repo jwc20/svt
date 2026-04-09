@@ -1,5 +1,6 @@
 package svt
 
+// TODO: these should be configurable
 const TotalRequiredMileage = 2040
 const InitialCash = 700
 
@@ -133,10 +134,25 @@ func ApplyEating(gs *GameState, choice int) {
 
 func AdvanceMileage(gs *GameState) {
 	gs.Trip.PreviousMileage = gs.Trip.Mileage
-	r := GetRandomInt(10) + 1
+	r := GetRandomInt(10)
 	miles := 200 + (gs.Inventory.Oxen-220)/5 + r*10
 	if gs.Trip.ActionChoice != 1 {
 		miles /= 2
 	}
 	gs.Trip.Mileage += miles
+}
+
+func GenerateEvent(gs *GameState) string {
+	// TODO
+	r := GetRandomInt(100)
+	switch {
+	case r <= 6:
+		// wagon breakdown
+	case r <= 11:
+		// ox injury
+	case r <= 15:
+		// daughter's broken arm
+	default:
+		return ""
+	}
 }
