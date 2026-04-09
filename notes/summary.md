@@ -26,3 +26,16 @@
 ## Day 4 - 04/09/2026
 
 - Start working on the Bubble Tea and Wish integration
+
+### TODO
+
+- [ ] finish the Bubble Tea and Wish integration for the Oregon Trail game 
+- Keep planning on ideas for the svt game
+
+
+## Day 5 - 04/10/2026
+
+### TODO
+
+- Work on the Bubble Tea and Wish SVT game
+
