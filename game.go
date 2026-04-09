@@ -15,3 +15,50 @@ type Inventory struct {
 	Clothing      int
 	Miscellaneous int
 }
+
+type TripState struct {
+	Mileage         int
+	PreviousMileage int
+	TurnNumber      int
+	CurrentDate     int
+	EatingChoice    int
+	ActionChoice    int
+	FortAvailable   bool
+	FortSpending    int
+}
+
+type Flags struct {
+	Injured              bool
+	Ill                  bool
+	ClearedSouthPass     bool
+	ClearedBlueMountains bool
+	SouthPassMileage     bool
+}
+
+type GameState struct {
+	Player    Player
+	Inventory Inventory
+	Trip      TripState
+	Flags     Flags
+}
+
+// ********************************************************************************************************************
+
+type GameStore interface {
+	SaveState(state GameState) error
+	LoadState() (GameState, error)
+}
+
+type GamePhase int
+
+const (
+	PhaseShooting GamePhase = iota
+	PhasePurchaseOxen
+	PhasePurchaseFood
+	PhasePurchaseAmmo
+	PhasePurchaseClothing
+	PhasePurchaseMisc
+	PhaseTurnAction
+	PhaseEating
+	PhaseGameOver
+)
