@@ -1,4 +1,10 @@
+<div id="top">
+<!-- HEADER STYLE: CLASSIC -->
+<div align="center">
+<img src="notes/journal/img/Sprite-silicon-stone.png" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
+
 # svt
+
 
 ## Quick Start
 
