@@ -47,15 +47,29 @@ func TestPurchaseItem(t *testing.T) {
 	t.Run("valid oxen purchase", func(t *testing.T) {
 		gs := InitState()
 		ok, _ := PurchaseItem(&gs, PhasePurchaseOxen, 250)
-
 		assert.True(t, ok, "expected ok")
 		assert.Equal(t, 250, gs.Inventory.Oxen, "oxen should be 250")
 	})
 
-	t.Run("valid ammo purchase", func(t *testing.T) {})
+	t.Run("valid ammo purchase", func(t *testing.T) {
+		gs := InitState()
+		ok, _ := PurchaseItem(&gs, PhasePurchaseAmmo, 50)
+		assert.True(t, ok, "expected ok")
+		assert.Equal(t, 50, gs.Inventory.Ammo, "ammo should be 50")
+	})
 
-	t.Run("valid clothing purchase", func(t *testing.T) {})
+	t.Run("valid clothing purchase", func(t *testing.T) {
+		gs := InitState()
+		ok, _ := PurchaseItem(&gs, PhasePurchaseClothing, 55)
+		assert.True(t, ok, "expected ok")
+		assert.Equal(t, 55, gs.Inventory.Clothing, "clothing should be 55")
+	})
 
-	t.Run("valid food purchase", func(t *testing.T) {})
+	t.Run("valid food purchase", func(t *testing.T) {
+		gs := InitState()
+		ok, _ := PurchaseItem(&gs, PhasePurchaseFood, 199)
+		assert.True(t, ok, "expected ok")
+		assert.Equal(t, 199, gs.Inventory.Food, "food should be 199")
+	})
 
 }

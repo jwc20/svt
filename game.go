@@ -92,6 +92,21 @@ func PurchaseItem(gs *GameState, phase GamePhase, amount int) (bool, string) {
 			return false, "AMOUNT MUST BE BETWEEN $100 AND $200"
 		}
 		gs.Inventory.Food = amount
+	case PhasePurchaseAmmo:
+		if amount < 50 || amount > 100 {
+			return false, "AMOUNT MUST BE BETWEEN $50 AND $100"
+		}
+		gs.Inventory.Ammo = amount
+	case PhasePurchaseClothing:
+		if amount < 50 || amount > 100 {
+			return false, "AMOUNT MUST BE BETWEEN $50 AND $100"
+		}
+		gs.Inventory.Clothing = amount
+	case PhasePurchaseMisc:
+		if amount < 50 || amount > 100 {
+			return false, "AMOUNT MUST BE BETWEEN $50 AND $100"
+		}
+		gs.Inventory.Miscellaneous = amount
 	default:
 		panic("unhandled default case")
 	}
