@@ -62,3 +62,10 @@ const (
 	PhaseEating
 	PhaseGameOver
 )
+
+func InitState() GameState {
+	return GameState{
+		Player: Player{Cash: InitialCash},
+		Trip:   TripState{FortAvailable: true},
+	}
+}
