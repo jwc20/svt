@@ -112,3 +112,13 @@ func PurchaseItem(gs *GameState, phase GamePhase, amount int) (bool, string) {
 	}
 	return true, ""
 }
+
+func FinalizePurchases(gs *GameState) (bool, int) {
+	spent := gs.Inventory.Oxen + gs.Inventory.Food + gs.Inventory.Ammo + gs.Inventory.Clothing + gs.Inventory.Miscellaneous
+	remaining := InitialCash - spent
+	if remaining < 0 {
+		return false, remaining
+	}
+	gs.Player.Cash = remaining
+	return true, remaining
+}

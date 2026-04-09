@@ -71,5 +71,31 @@ func TestPurchaseItem(t *testing.T) {
 		assert.True(t, ok, "expected ok")
 		assert.Equal(t, 199, gs.Inventory.Food, "food should be 199")
 	})
+}
 
+func TestFinalizePurchase(t *testing.T) {
+	t.Run("valid total", func(t *testing.T) {
+		gs := InitState()
+		gs.Inventory.Oxen = 200
+		gs.Inventory.Food = 100
+		gs.Inventory.Ammo = 50
+		gs.Inventory.Clothing = 50
+		gs.Inventory.Miscellaneous = 50
+		ok, remaining := FinalizePurchases(&gs)
+
+		assert.True(t, ok, "expected ok")
+		assert.Equal(t, 250, remaining, "remaining cash should be 250")
+		assert.Equal(t, 250, gs.Player.Cash, "player cash should be 250")
+	})
+	t.Run("overspent", func(t *testing.T) {
+		gs := InitState()
+		gs.Inventory.Oxen = 300
+		gs.Inventory.Food = 200
+		gs.Inventory.Ammo = 100
+		gs.Inventory.Clothing = 100
+		gs.Inventory.Miscellaneous = 100
+		ok, _ := FinalizePurchases(&gs)
+
+		assert.False(t, ok, "expected false for overspent")
+	})
 }
