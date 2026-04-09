@@ -40,3 +40,22 @@ func TestSetShootingLevel(t *testing.T) {
 		assert.False(t, SetShootingLevel(&gs, 6), "expected false")
 	})
 }
+
+func TestPurchaseItem(t *testing.T) {
+	// TODO: test if too low or too expensive to purchase
+
+	t.Run("valid oxen purchase", func(t *testing.T) {
+		gs := InitState()
+		ok, _ := PurchaseItem(&gs, PhasePurchaseOxen, 250)
+
+		assert.True(t, ok, "expected ok")
+		assert.Equal(t, 250, gs.Inventory.Oxen, "oxen should be 250")
+	})
+
+	t.Run("valid ammo purchase", func(t *testing.T) {})
+
+	t.Run("valid clothing purchase", func(t *testing.T) {})
+
+	t.Run("valid food purchase", func(t *testing.T) {})
+
+}

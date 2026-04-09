@@ -70,10 +70,30 @@ func InitState() GameState {
 	}
 }
 
+// ********************************************************************************************************************
+
 func SetShootingLevel(gs *GameState, level int) bool {
 	if level < 1 || level > 5 {
 		return false
 	}
 	gs.Player.ShootingLevel = level
 	return true
+}
+
+func PurchaseItem(gs *GameState, phase GamePhase, amount int) (bool, string) {
+	switch phase {
+	case PhasePurchaseOxen:
+		if amount < 200 || amount > 300 {
+			return false, "AMOUNT MUST BE BETWEEN $200 AND $300"
+		}
+		gs.Inventory.Oxen = amount
+	case PhasePurchaseFood:
+		if amount < 100 || amount > 200 {
+			return false, "AMOUNT MUST BE BETWEEN $100 AND $200"
+		}
+		gs.Inventory.Food = amount
+	default:
+		panic("unhandled default case")
+	}
+	return true, ""
 }
