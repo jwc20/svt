@@ -7,6 +7,7 @@ require (
 	charm.land/log/v2 v2.0.0
 	charm.land/wish/v2 v2.0.0
 	github.com/charmbracelet/ssh v0.0.0-20250826160808-ebfa259c7309
+	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.11.1
 )
 
