@@ -22,7 +22,7 @@ func checkIfTestMode() bool {
 
 	testMode := os.Getenv("TEST_MODE")
 
-	return testMode == "true"
+	return testMode == "True"
 }
 
 func GetRandomInt(ceiling int) int {
@@ -30,10 +30,11 @@ func GetRandomInt(ceiling int) int {
 
 	if checkIfTestMode() {
 		// stop program from requesting random.org if it is in test mode
+		fmt.Println("TEST MODE: Using random.org is disabled")
 		result := rand.Intn(ceiling) + 1
 		return result
 	}
-
+	fmt.Println("TEST MODE: Using random.org is enabled")
 	RandomIntURL := fmt.Sprintf("https://www.random.org/integers/?num=1&min=1&max=%d&col=1&base=10&format=plain&rnd=new", ceiling)
 
 	request := NewGetRandomIntRequest(RandomIntURL)
