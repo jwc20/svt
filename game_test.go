@@ -171,3 +171,30 @@ func TestHandleAilment(t *testing.T) {
 		}
 	})
 }
+
+func TestDateName(t *testing.T) {
+	got := DateName(1)
+	if got != "SATURDAY, MARCH 29, 1847" {
+		t.Errorf("got %q", got)
+	}
+	got = DateName(21)
+	if got != "WINTER" {
+		t.Errorf("got %q, want WINTER", got)
+	}
+}
+
+func TestIsStarved(t *testing.T) {
+	gs := InitState()
+	gs.Inventory.Food = -1
+	if !IsStarved(&gs) {
+		t.Error("expected starved")
+	}
+}
+
+func TestIsArrived(t *testing.T) {
+	gs := InitState()
+	gs.Trip.Mileage = 2040
+	if !IsArrived(&gs) {
+		t.Error("expected arrived")
+	}
+}
