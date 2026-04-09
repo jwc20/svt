@@ -144,3 +144,30 @@ func TestGenerateEvent(t *testing.T) {
 		t.Error("expected at least one event to change game state")
 	}
 }
+
+func TestHandleAilment(t *testing.T) {
+	t.Run("dies when no supplies", func(t *testing.T) {
+		gs := InitState()
+		gs.Flags.Ill = true
+		gs.Inventory.Miscellaneous = 2
+		survived, msg := HandleAilment(&gs)
+		if survived {
+			t.Error("expected death")
+		}
+		if msg != "YOU DIED OF PNEUMONIA." {
+			t.Errorf("got %q", msg)
+		}
+	})
+	t.Run("survives with supplies", func(t *testing.T) {
+		gs := InitState()
+		gs.Flags.Injured = true
+		gs.Inventory.Miscellaneous = 30
+		survived, _ := HandleAilment(&gs)
+		if !survived {
+			t.Error("expected survival")
+		}
+		if gs.Flags.Injured {
+			t.Error("Injured should be cleared")
+		}
+	})
+}

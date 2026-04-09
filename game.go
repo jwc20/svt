@@ -196,3 +196,16 @@ func GenerateEvent(gs *GameState) string {
 		return ""
 	}
 }
+
+func HandleAilment(gs *GameState) (bool, string) {
+	if gs.Inventory.Miscellaneous < 5 {
+		if gs.Flags.Ill {
+			return false, "YOU DIED OF PNEUMONIA."
+		}
+		return false, "YOU DIED OF YOUR INJURIES."
+	}
+	gs.Inventory.Miscellaneous -= 5 + GetRandomInt(5)
+	gs.Flags.Ill = false
+	gs.Flags.Injured = false
+	return true, "YOU USED MEDICINE AND RESTED."
+}
