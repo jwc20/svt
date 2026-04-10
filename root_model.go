@@ -1,6 +1,8 @@
 package svt
 
-import tea "charm.land/bubbletea/v2"
+import (
+	tea "charm.land/bubbletea/v2"
+)
 
 type ViewState int
 
@@ -39,10 +41,21 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
+
+	case StartGameMsg:
+		gm := NewGameModel(m.store, m.width, m.height)
+		m.game = &gm
+		m.state = GameView
+		return m, m.game.Init()
+
+	case BackToLobbyMsg:
+		m.game = nil
+		m.state = LobbyView
+		return m, nil
 	}
 
 	switch m.state {
