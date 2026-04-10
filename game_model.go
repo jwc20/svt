@@ -27,6 +27,31 @@ type GameModel struct {
 	deathMessage string
 }
 
+func NewGameModel(store GameStore, w, h int) GameModel {
+	ti := textinput.New()
+	ti.Placeholder = "Enter choice..."
+	ti.CharLimit = 20
+	ti.Width = maxInt(w/4-6, 14)
+	ti.Focus()
+
+	vp := viewport.New(maxInt(w/4-4, 14), maxInt(h-22, 4))
+	gs := InitState()
+
+	m := GameModel{
+		state:    gs,
+		phase:    PhaseShooting,
+		store:    store,
+		input:    ti,
+		choiceVP: vp,
+		width:    w,
+		height:   h,
+	}
+	//m.setShootingPrompt()
+	return m
+}
+
+func (m GameModel) Init() tea.Cmd { return nil }
+
 func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 	return m, nil
 }
