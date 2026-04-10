@@ -61,8 +61,12 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m RootModel) View() tea.View {
+	var v tea.View
 	if m.state == GameView && m.game != nil {
-		return m.game.View()
+		v = m.game.View()
+	} else {
+		v = m.lobby.View()
 	}
-	return m.lobby.View()
+	v.AltScreen = true
+	return v
 }

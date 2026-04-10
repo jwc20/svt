@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 type LobbyModel struct {
@@ -30,7 +30,7 @@ func (m LobbyModel) Update(msg tea.Msg) (LobbyModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "up", "k":
 			if m.cursor > 0 {
@@ -42,16 +42,15 @@ func (m LobbyModel) Update(msg tea.Msg) (LobbyModel, tea.Cmd) {
 			}
 		case "enter":
 			if m.cursor == 0 {
-				return m, func() tea.Msg { return StartGameMessage{} }
+				return m, func() tea.Msg { return StartGameMsg{} }
 			}
 		}
 	}
 	return m, nil
 }
-
 func (m LobbyModel) View() tea.View {
 	var sb strings.Builder
-	sb.WriteString(TitleStyle.Render("  THE SILICON TRAIL") + "\n\n")
+	sb.WriteString(TitleStyle.Render("   THE SILICON TRAIL") + "\n\n")
 	sb.WriteString(DimStyle.Render(fmt.Sprintf("Welcome, %s", m.playerId)) + "\n\n")
 	for i, choice := range m.choices {
 		cursor := "  "
@@ -66,7 +65,7 @@ func (m LobbyModel) View() tea.View {
 	}
 	sb.WriteString("\n" + DimStyle.Render("↑/↓: navigate  enter: select  ctrl+c: quit"))
 	content := lipgloss.NewStyle().Align(lipgloss.Center).Render(sb.String())
-	v := tea.NewView(content)
-	v.AltScreen = true
+
+	v := tea.NewView(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content))
 	return v
 }

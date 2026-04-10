@@ -1,7 +1,7 @@
 package svt
 
-type StartGameMessage struct{}
+type StartGameMsg struct{}
 
-type BackToLobbyMessage struct{}
+type BackToLobbyMsg struct{}
 
-type GameLogMessage struct{ Text string }
+type GameLogMsg struct{ Text string }

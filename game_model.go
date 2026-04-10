@@ -1,8 +1,8 @@
 package svt
 
 import (
-	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/charmbracelet/bubbles/viewport"
+	"charm.land/bubbles/v2/textinput"
+	"charm.land/bubbles/v2/viewport"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -31,10 +31,13 @@ func NewGameModel(store GameStore, w, h int) GameModel {
 	ti := textinput.New()
 	ti.Placeholder = "Enter choice..."
 	ti.CharLimit = 20
-	ti.Width = maxInt(w/4-6, 14)
+	ti.SetWidth(maxInt(w-8, 20))
 	ti.Focus()
 
-	vp := viewport.New(maxInt(w/4-4, 14), maxInt(h-22, 4))
+	vp := viewport.New()
+	vp.SetWidth(maxInt(w-8, 20))
+	vp.SetHeight(maxInt(h-20, 4))
+
 	gs := InitState()
 
 	m := GameModel{
@@ -46,6 +49,7 @@ func NewGameModel(store GameStore, w, h int) GameModel {
 		width:    w,
 		height:   h,
 	}
+
 	//m.setShootingPrompt()
 	return m
 }
