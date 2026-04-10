@@ -22,6 +22,8 @@ func NewLobbyModel(playerId string) LobbyModel {
 	}
 }
 
+// ********************************************************************************************************************
+
 func (m LobbyModel) Init() tea.Cmd { return nil }
 
 func (m LobbyModel) Update(msg tea.Msg) (LobbyModel, tea.Cmd) {
@@ -49,7 +51,7 @@ func (m LobbyModel) Update(msg tea.Msg) (LobbyModel, tea.Cmd) {
 
 func (m LobbyModel) View() tea.View {
 	var sb strings.Builder
-	sb.WriteString(TitleStyle.Render("THE SILICON TRAIL") + "\n\n")
+	sb.WriteString(TitleStyle.Render("  THE SILICON TRAIL") + "\n\n")
 	sb.WriteString(DimStyle.Render(fmt.Sprintf("Welcome, %s", m.playerId)) + "\n\n")
 	for i, choice := range m.choices {
 		cursor := "  "

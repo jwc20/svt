@@ -1,6 +1,11 @@
 package svt
 
-import tea "charm.land/bubbletea/v2"
+import (
+	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
+
+	tea "charm.land/bubbletea/v2"
+)
 
 type GameModel struct {
 	state         GameState
@@ -12,6 +17,8 @@ type GameModel struct {
 	promptLines []string
 
 	choiceLog []string
+	choiceVP  viewport.Model
+	input     textinput.Model
 	width     int
 	height    int
 
