@@ -37,7 +37,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width, m.height = msg.Width, msg.Height
 		m.lobby.width, m.lobby.height = msg.Width, msg.Height
 		if m.game != nil {
-			m.game.width, m.game.height = msg.Width, msg.Height
+			m.game.Resize(msg.Width, msg.Height)
 		}
 		return m, nil
 
@@ -74,12 +74,8 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m RootModel) View() tea.View {
-	var v tea.View
 	if m.state == GameView && m.game != nil {
-		v = m.game.View()
-	} else {
-		v = m.lobby.View()
+		return m.game.View()
 	}
-	v.AltScreen = true
-	return v
+	return m.lobby.View()
 }

@@ -22,14 +22,10 @@ func NewLobbyModel(playerId string) LobbyModel {
 	}
 }
 
-// ********************************************************************************************************************
-
 func (m LobbyModel) Init() tea.Cmd { return nil }
 
 func (m LobbyModel) Update(msg tea.Msg) (LobbyModel, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "up", "k":
@@ -48,6 +44,7 @@ func (m LobbyModel) Update(msg tea.Msg) (LobbyModel, tea.Cmd) {
 	}
 	return m, nil
 }
+
 func (m LobbyModel) View() tea.View {
 	var sb strings.Builder
 	sb.WriteString(TitleStyle.Render("   THE SILICON TRAIL") + "\n\n")
@@ -67,5 +64,6 @@ func (m LobbyModel) View() tea.View {
 	content := lipgloss.NewStyle().Align(lipgloss.Center).Render(sb.String())
 
 	v := tea.NewView(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content))
+	v.AltScreen = true
 	return v
 }
