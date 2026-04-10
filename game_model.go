@@ -11,10 +11,7 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-var gamePanel = lipgloss.NewStyle().
-	Border(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color("62")).
-	Padding(1, 2)
+var gamePanel = lipgloss.NewStyle().Padding(1, 2)
 
 type GameModel struct {
 	state         GameState
@@ -38,14 +35,11 @@ type GameModel struct {
 
 func NewGameModel(store GameStore, w, h int) GameModel {
 	ti := textinput.New()
-	ti.Placeholder = "Enter choice..."
 	ti.CharLimit = 20
-	ti.SetWidth(maxInt(w-8, 20))
+	ti.SetWidth(24)
 	ti.Focus()
 
 	vp := viewport.New()
-	vp.SetWidth(maxInt(w-8, 20))
-	vp.SetHeight(maxInt(h-20, 4))
 
 	gs := InitState()
 
@@ -69,9 +63,7 @@ func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		m.input.SetWidth(maxInt(m.width-8, 20))
-		m.choiceVP.SetWidth(maxInt(m.width-8, 20))
-		m.choiceVP.SetHeight(maxInt(m.height-20, 4))
+		m.input.SetWidth(24)
 		m.refreshChoiceVP()
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -254,19 +246,21 @@ func (m GameModel) View() tea.View {
 
 	var inputLine string
 	if !m.gameOver {
-		inputLine = "\n" + PromptStyle.Render("enter: ") + m.input.View()
+		inputRaw := m.input.View()
+		inputLine = "\n" + lipgloss.NewStyle().Width(maxInt(m.width-12, 20)).Align(lipgloss.Center).Render(inputRaw)
 	}
 
-	inner := status.String() + "\n" +
-		inventory + "\n\n" +
+	inner := status.String() + "\n\n" +
+		inventory + "\n\n\n" +
 		prompt +
 		inputLine
 
-	panel := gamePanel.Width(maxInt(m.width-2, 20)).Render(inner)
-	help := DimStyle.Render("ctrl+c: quit")
-	content := lipgloss.JoinVertical(lipgloss.Left, panel, help)
+	panelWidth := maxInt(m.width-6, 20)
+	centeredInner := lipgloss.NewStyle().Width(panelWidth - 6).Align(lipgloss.Center).Render(inner)
+	panel := gamePanel.Width(panelWidth).Render(centeredInner)
+	content := lipgloss.JoinVertical(lipgloss.Center, panel)
 
-	return tea.NewView(content)
+	return tea.NewView(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content))
 }
 
 func (m *GameModel) addChoice(text string) {
