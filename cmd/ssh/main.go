@@ -1,12 +1,8 @@
 package main
 
-// An example Bubble Tea server. This will put an ssh session into alt screen
-// and continually print up to date terminal information.
-
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -19,6 +15,8 @@ import (
 	"charm.land/wish/v2/bubbletea"
 	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
+
+	trail "github.com/jwc20/svt"
 )
 
 const (
@@ -26,13 +24,18 @@ const (
 	port = "23234"
 )
 
+type SimpleStore struct{}
+
+func (s *SimpleStore) SaveState(state trail.GameState) error { return nil }
+func (s *SimpleStore) LoadState() (trail.GameState, error)   { return trail.GameState{}, nil }
+
 func main() {
 	s, err := wish.NewServer(
 		ssh.AllocatePty(),
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithMiddleware(
-			myCustomBubbleteaMiddleware(),
+			SvtBubbleteaMiddleware(),
 			logging.Middleware(),
 		),
 	)
@@ -59,73 +62,27 @@ func main() {
 	}
 }
 
-// You can write your own custom bubbletea middleware that wraps tea.Program.
-// Make sure you set the program input and output to ssh.Session.
-func myCustomBubbleteaMiddleware() wish.Middleware {
-	newProg := func(m tea.Model, opts ...tea.ProgramOption) *tea.Program {
-		p := tea.NewProgram(m, opts...)
-		go func() {
-			for {
-				<-time.After(1 * time.Second)
-				p.Send(timeMsg(time.Now()))
-			}
-		}()
-		return p
-	}
+func SvtBubbleteaMiddleware() wish.Middleware {
+	store := &SimpleStore{}
+
 	teaHandler := func(s ssh.Session) *tea.Program {
 		pty, _, active := s.Pty()
 		if !active {
 			wish.Fatalln(s, "no active terminal, skipping")
 			return nil
 		}
-		m := model{
-			term:   pty.Term,
-			width:  pty.Window.Width,
-			height: pty.Window.Height,
-			time:   time.Now(),
-		}
-		return newProg(m, bubbletea.MakeOptions(s)...)
+
+		playerId := s.User()
+
+		m := trail.NewRootModel(store, playerId)
+		opts := bubbletea.MakeOptions(s)
+
+		p := tea.NewProgram(m, opts...)
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			p.Send(tea.WindowSizeMsg{Width: pty.Window.Width, Height: pty.Window.Height})
+		}()
+		return p
 	}
 	return bubbletea.MiddlewareWithProgramHandler(teaHandler)
-}
-
-// Just a generic tea.Model to demo terminal information of ssh.
-type model struct {
-	term   string
-	width  int
-	height int
-	time   time.Time
-}
-
-type timeMsg time.Time
-
-func (m model) Init() tea.Cmd {
-	return nil
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case timeMsg:
-		m.time = time.Time(msg)
-	case tea.WindowSizeMsg:
-		m.height = msg.Height
-		m.width = msg.Width
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		}
-	}
-	return m, nil
-}
-
-func (m model) View() tea.View {
-	s := "Your term is %s\n"
-	s += "Your window size is x: %d y: %d\n"
-	s += "Time: " + m.time.Format(time.RFC1123) + "\n\n"
-	s += "Press 'q' to quit\n"
-	content := fmt.Sprintf(s, m.term, m.width, m.height)
-	v := tea.NewView(content)
-	v.AltScreen = true
-	return v
 }
