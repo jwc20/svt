@@ -151,3 +151,20 @@ Where `apiGatewayCost = 129` if either server or database is an AWS service, oth
 
 **Route (12 Turns):**
 1. San Jose → 2. Santa Clara → 3. Sunnyvale → 4. Mountain View → 5. Palo Alto → 6. Menlo Park → 7. Redwood City → 8. San Mateo → 9. Hillsborough → 10. San Bruno → 11. Daly City → 12. San Francisco
+
+---
+
+**Actions (pick one per turn):**
+
+1. Push forward — advance miles normally, tech debt accumulates normally
+2. Fix bugs — miles halved, bugCount -= rand(2..5), techDebt -= rand(1..3)
+   - fixing bug completely is determined if winning in a [death roll](https://eu.forums.blizzard.com/en/wow/t/deathrolling/112260/7)
+
+   ![img.png](img.png)
+   
+**End of turn (always happens):**
+
+1. Cash burn deducted
+2. Revenue collected
+3. Hype decay applied
+4. Random event rolled
