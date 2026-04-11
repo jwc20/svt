@@ -1,4 +1,4 @@
-package svt_test
+package rand_test
 
 import (
 	"fmt"
@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	trail "github.com/jwc20/svt"
+	svtrand "github.com/jwc20/svt/internal/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetRandomInt(t *testing.T) {
 	t.Run("returns a random number between 1 and 100", func(t *testing.T) {
-		result := trail.GetRandomInt(100)
+		result := svtrand.GetRandomInt(100)
 
 		assert.GreaterOrEqual(t, result, 1, fmt.Sprintf("result %d should be >= 1", result))
 		assert.LessOrEqual(t, result, 100, fmt.Sprintf("result %d should be <= 100", result))
@@ -26,13 +26,13 @@ func TestNewGetRandomIntRequest(t *testing.T) {
 	url := "https://www.random.org/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new"
 
 	t.Run("returns a GET request", func(t *testing.T) {
-		req := trail.NewGetRandomIntRequest(url)
+		req := svtrand.NewGetRandomIntRequest(url)
 
 		assert.Equal(t, http.MethodGet, req.Method)
 	})
 
 	t.Run("returns a non-nil request", func(t *testing.T) {
-		req := trail.NewGetRandomIntRequest(url)
+		req := svtrand.NewGetRandomIntRequest(url)
 
 		require.NotNil(t, req)
 	})
@@ -49,7 +49,7 @@ func TestNewGetRandomIntResponseFromClient(t *testing.T) {
 		req, err := http.NewRequest("GET", server.URL, nil)
 		require.NoError(t, err)
 
-		resp, _ := trail.NewGetRandomIntResponseFromClient(req)
+		resp, _ := svtrand.NewGetRandomIntResponseFromClient(req)
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -64,7 +64,7 @@ func TestNewGetRandomIntResponseFromClient(t *testing.T) {
 		req, err := http.NewRequest("GET", server.URL, nil)
 		require.NoError(t, err)
 
-		resp, _ := trail.NewGetRandomIntResponseFromClient(req)
+		resp, _ := svtrand.NewGetRandomIntResponseFromClient(req)
 		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
@@ -81,21 +81,21 @@ func TestExtractRandomInteger(t *testing.T) {
 
 	t.Run("parses a plain integer", func(t *testing.T) {
 		resp := makeResponse("42")
-		result := trail.ExtractRandomInteger(resp)
+		result := svtrand.ExtractRandomInteger(resp)
 
 		assert.Equal(t, 42, result)
 	})
 
 	t.Run("trims trailing newline", func(t *testing.T) {
 		resp := makeResponse("7\n")
-		result := trail.ExtractRandomInteger(resp)
+		result := svtrand.ExtractRandomInteger(resp)
 
 		assert.Equal(t, 7, result)
 	})
 
 	t.Run("trims surrounding whitespace", func(t *testing.T) {
 		resp := makeResponse("  13  \n")
-		result := trail.ExtractRandomInteger(resp)
+		result := svtrand.ExtractRandomInteger(resp)
 
 		assert.Equal(t, 13, result)
 	})

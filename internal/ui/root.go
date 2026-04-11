@@ -1,7 +1,9 @@
-package svt
+package ui
 
 import (
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/jwc20/svt/internal/engine"
 )
 
 type ViewState int
@@ -15,12 +17,12 @@ type RootModel struct {
 	state         ViewState
 	lobby         LobbyModel
 	game          *GameModel
-	store         GameStore
+	store         engine.GameStore
 	playerId      string
 	width, height int
 }
 
-func NewRootModel(store GameStore, userID string) RootModel {
+func NewRootModel(store engine.GameStore, userID string) RootModel {
 	return RootModel{
 		state:    LobbyView,
 		lobby:    NewLobbyModel(userID),

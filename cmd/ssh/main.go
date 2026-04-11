@@ -16,7 +16,8 @@ import (
 	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
 
-	trail "github.com/jwc20/svt"
+	"github.com/jwc20/svt/internal/engine"
+	"github.com/jwc20/svt/internal/ui"
 )
 
 const (
@@ -26,8 +27,8 @@ const (
 
 type SimpleStore struct{}
 
-func (s *SimpleStore) SaveState(state trail.GameState) error { return nil }
-func (s *SimpleStore) LoadState() (trail.GameState, error)   { return trail.GameState{}, nil }
+func (s *SimpleStore) SaveState(state engine.GameState) error { return nil }
+func (s *SimpleStore) LoadState() (engine.GameState, error)   { return engine.GameState{}, nil }
 
 func main() {
 	s, err := wish.NewServer(
@@ -74,7 +75,7 @@ func SvtBubbleteaMiddleware() wish.Middleware {
 
 		playerId := s.User()
 
-		m := trail.NewRootModel(store, playerId)
+		m := ui.NewRootModel(store, playerId)
 		opts := bubbletea.MakeOptions(s)
 
 		p := tea.NewProgram(m, opts...)

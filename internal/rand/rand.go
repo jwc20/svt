@@ -1,4 +1,4 @@
-package svt
+package rand
 
 import (
 	"fmt"
@@ -15,10 +15,8 @@ import (
 )
 
 func checkIfTestMode() bool {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// Best-effort load; .env may not exist (e.g. in production or CI).
+	_ = godotenv.Load()
 
 	testMode := os.Getenv("TEST_MODE")
 
