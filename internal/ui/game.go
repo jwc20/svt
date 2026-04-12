@@ -53,6 +53,8 @@ type GameModel struct {
 	gameOver     bool
 	gameResult   string
 	deathMessage string
+
+	deathRollCeiling int // current upper bound for player's next roll
 }
 
 func NewGameModel(store engine.GameStore, w, h int) GameModel {
@@ -131,6 +133,8 @@ func (m GameModel) handleInput() (GameModel, tea.Cmd) {
 		return m.handleDBChoice(val)
 	case engine.PhaseTurnAction:
 		return m.handleTurnAction(val)
+	case engine.PhaseDeathRoll:
+		return m.handleDeathRoll(val)
 	case engine.PhaseGameOver:
 		return m, func() tea.Msg { return BackToLobbyMsg{} }
 	}
@@ -161,10 +165,8 @@ func (m GameModel) handleDBChoice(val string) (GameModel, tea.Cmd) {
 	db := engine.DBSpecs[m.state.Database]
 	m.addChoice(fmt.Sprintf("Database: %s", db.Name))
 
-	// Initialize user count
 	engine.UpdateUserCount(&m.state)
 
-	// Show config summary
 	gw := ""
 	if engine.NeedsAPIGateway(&m.state) {
 		gw = " (+ $129/mo API Gateway)"
@@ -186,39 +188,77 @@ func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 
 	if choice == 1 {
 		m.addChoice(">> Push forward")
-	} else {
-		m.addChoice(">> Fix bugs")
+		miles := engine.AdvanceMileage(&m.state)
+		m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+		return m.finishTurn()
 	}
 
-	// Advance mileage
+	m.addChoice(">> Fix bugs")
+	m.addChoice("  -- Death Roll --")
+
+	sysRoll := engine.SystemDeathRoll(100)
+	m.addChoice(fmt.Sprintf("  System: rolls %d (1-100)", sysRoll))
+
+	if sysRoll == 1 {
+		return m.deathRollWin()
+	}
+
+	m.deathRollCeiling = sysRoll
+	m.phase = engine.PhaseDeathRoll
+	m.setDeathRollPrompt()
+	return m, nil
+}
+
+func (m GameModel) handleDeathRoll(val string) (GameModel, tea.Cmd) {
+	if strings.ToLower(val) != "roll" {
+		m.addChoice("  Type \"roll\" to roll!")
+		return m, nil
+	}
+
+	playerRoll := engine.SystemDeathRoll(m.deathRollCeiling)
+	m.addChoice(fmt.Sprintf("  You: rolls %d (1-%d)", playerRoll, m.deathRollCeiling))
+
+	if playerRoll == 1 {
+		return m.deathRollLose()
+	}
+
+	// system rolls automatically
+	m.deathRollCeiling = playerRoll
+	sysRoll := engine.SystemDeathRoll(m.deathRollCeiling)
+	m.addChoice(fmt.Sprintf("  System: rolls %d (1-%d)", sysRoll, m.deathRollCeiling))
+
+	if sysRoll == 1 {
+		return m.deathRollWin()
+	}
+
+	// back to player
+	m.deathRollCeiling = sysRoll
+	m.setDeathRollPrompt()
+	return m, nil
+}
+
+func (m GameModel) deathRollWin() (GameModel, tea.Cmd) {
+	m.addChoice(GoodStyle.Render("  You won the death roll!"))
+
+	// apply bug fix + mileage only on win
+	bugsFixed, debtFixed := engine.FixBugs(&m.state)
+	miles := engine.AdvanceMileage(&m.state)
+	m.addChoice(fmt.Sprintf("  Fixed %d bugs, reduced %d tech debt", bugsFixed, debtFixed))
+	m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+	m.addChoice("")
+	return m.finishTurn()
+}
+
+func (m GameModel) deathRollLose() (GameModel, tea.Cmd) {
+	m.addChoice(WarnStyle.Render("  You rolled 1! You lost the death roll."))
+
 	miles := engine.AdvanceMileage(&m.state)
 	m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+	m.addChoice("")
+	return m.finishTurn()
+}
 
-	// Fix bugs if chosen
-	if choice == 2 {
-		bugsFixed, debtFixed := engine.FixBugs(&m.state)
-		m.addChoice(fmt.Sprintf("  Fixed %d bugs, reduced %d tech debt", bugsFixed, debtFixed))
-
-		// Death roll for complete fix
-		won, rolls := engine.DeathRoll(&m.state)
-		rollStrs := make([]string, len(rolls))
-		for i, r := range rolls {
-			rollStrs[i] = strconv.Itoa(r)
-		}
-		m.addChoice(fmt.Sprintf("  Death roll: [%s]", strings.Join(rollStrs, ", ")))
-		if won {
-			extraBugs := m.state.BugCount / 2
-			m.state.BugCount -= extraBugs
-			if m.state.BugCount < 0 {
-				m.state.BugCount = 0
-			}
-			m.addChoice(GoodStyle.Render(fmt.Sprintf("  You won the death roll! %d more bugs squashed!", extraBugs)))
-		} else {
-			m.addChoice(WarnStyle.Render("  You lost the death roll. Some bugs persist."))
-		}
-	}
-
-	// End-of-turn effects
+func (m GameModel) finishTurn() (GameModel, tea.Cmd) {
 	cashBurn, revenue, _, techDebtAdded, bugsAdded, eventMsg := engine.ApplyEndOfTurn(&m.state)
 
 	m.addChoice(fmt.Sprintf("  Cash burn: -$%d | Revenue: +$%d | Net: $%d", cashBurn, revenue, m.state.Cash))
@@ -229,7 +269,6 @@ func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 		m.addChoice(EventStyle.Render("  EVENT: " + eventMsg))
 	}
 
-	// Check incident
 	survived, incidentMsg := engine.CheckIncident(&m.state)
 	if !survived {
 		m.addChoice(BadStyle.Render("  " + incidentMsg))
@@ -237,21 +276,19 @@ func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 
 	m.addChoice("---")
 
-	// Check lose conditions
 	if reason, lost := engine.CheckLoseCondition(&m.state); lost {
 		m.addChoice(BadStyle.Render(reason))
 		m.setGameOver("died", reason)
 		return m, nil
 	}
 
-	// Check win
+	// check win
 	if engine.IsArrived(&m.state) {
 		m.addChoice(GoodStyle.Render("You made it to San Francisco!"))
 		m.setGameOver("won", "")
 		return m, nil
 	}
 
-	// Check if we've exceeded max turns
 	if m.state.TurnNumber >= engine.TotalTurns {
 		m.addChoice(BadStyle.Render("You ran out of turns before reaching San Francisco!"))
 		m.setGameOver("died", "Ran out of turns")
@@ -309,6 +346,16 @@ func (m *GameModel) setTurnPrompt() {
 	}
 }
 
+func (m *GameModel) setDeathRollPrompt() {
+	m.promptTitle = "DEATH ROLL"
+	m.promptLines = []string{
+		"Type \"roll\" to roll!",
+		"",
+		DimStyle.Render("If you roll 1, you lose."),
+		DimStyle.Render("If the system rolls 1, you win!"),
+	}
+}
+
 func (m *GameModel) setGameOver(result, deathMsg string) {
 	m.phase = engine.PhaseGameOver
 	m.gameOver = true
@@ -341,7 +388,9 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 	}
 }
 
+// ********************************************************************************************************************
 // ── View ──────────────────────────────────────────────────────────
+// ********************************************************************************************************************
 
 func (m GameModel) View() tea.View {
 	lw := m.leftW()
@@ -355,25 +404,29 @@ func (m GameModel) View() tea.View {
 		lipgloss.Center, lipgloss.Center, promptText)
 	leftCol := promptPanel.Width(lw - 2).Height(leftContentH).Render(centeredPrompt)
 
-	// ── right column ──
-
 	sBox := statusBox.Width(rw - 2).Render(m.renderStatus())
 	statusRenderedH := lipgloss.Height(sBox)
 
 	logPanelH := maxInt(innerH-statusRenderedH-2, 4)
 	logInnerH := maxInt(logPanelH, 2)
 
+	vpW := maxInt(rw-6, 10)
+	wrapped := lipgloss.Wrap(strings.Join(m.choiceLog, "\n"), vpW, "")
+	m.choiceVP.SetContent(wrapped)
+
 	var logInner string
 	if m.gameOver {
-		m.choiceVP.SetWidth(maxInt(rw-6, 10))
+		m.choiceVP.SetWidth(vpW)
 		m.choiceVP.SetHeight(logInnerH)
+		m.choiceVP.GotoBottom()
 		logInner = m.choiceVP.View()
 	} else {
 		inputLine := PromptStyle.Render("") + m.input.View()
 		vpH := maxInt(logInnerH-2, 1)
-		m.choiceVP.SetWidth(maxInt(rw-6, 10))
+		m.choiceVP.SetWidth(vpW)
 		m.choiceVP.SetHeight(vpH)
-		separator := DimStyle.Render(strings.Repeat("~", maxInt(rw-6, 10)))
+		m.choiceVP.GotoBottom()
+		separator := DimStyle.Render(strings.Repeat("~", vpW))
 		logInner = m.choiceVP.View() + "\n" + separator + "\n" + inputLine
 	}
 
@@ -409,7 +462,6 @@ func (m GameModel) renderStatus() string {
 	sb.WriteString("\n")
 	sb.WriteString(PlainLabel.Render("Startup Stats") + "\n")
 
-	// Cash with color
 	cashStr := fmt.Sprintf("$%d", m.state.Cash)
 	if m.state.Cash < 200 {
 		cashStr = BadStyle.Render(cashStr)
@@ -418,7 +470,6 @@ func (m GameModel) renderStatus() string {
 	}
 	sb.WriteString(fmt.Sprintf("Cash: %s\n", cashStr))
 
-	// Hype with color
 	hypeStr := fmt.Sprintf("%d", m.state.Hype)
 	if m.state.Hype < 15 {
 		hypeStr = BadStyle.Render(hypeStr)
@@ -429,7 +480,6 @@ func (m GameModel) renderStatus() string {
 
 	sb.WriteString(fmt.Sprintf("Users: %d\n", m.state.UserCount))
 
-	// Tech Health with color
 	th := engine.TechHealth(&m.state)
 	thStr := fmt.Sprintf("%d", th)
 	if th < 20 {
@@ -442,7 +492,6 @@ func (m GameModel) renderStatus() string {
 	sb.WriteString(fmt.Sprintf("Tech Debt: %d\n", m.state.TechDebt))
 	sb.WriteString(fmt.Sprintf("Bugs: %d\n", m.state.BugCount))
 
-	// Infrastructure
 	sb.WriteString("\n")
 	sb.WriteString(PlainLabel.Render("Infrastructure") + "\n")
 	sb.WriteString(fmt.Sprintf("Server: %s\n", engine.ServerSpecs[m.state.Server].Name))

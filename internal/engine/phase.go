@@ -6,5 +6,6 @@ const (
 	PhaseServerChoice GamePhase = iota
 	PhaseDBChoice
 	PhaseTurnAction
+	PhaseDeathRoll
 	PhaseGameOver
 )

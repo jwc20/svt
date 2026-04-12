@@ -286,18 +286,13 @@ func TestFixBugsNoOpWhenPushForward(t *testing.T) {
 	assert.Equal(t, 10, gs.BugCount)
 }
 
-func TestDeathRoll(t *testing.T) {
-	gs := InitState()
-	// Just verify it terminates and returns valid results
-	for i := 0; i < 20; i++ {
-		_, rolls := DeathRoll(&gs)
-		assert.Greater(t, len(rolls), 0)
-		// Last roll should be 1 or sequence should end
-		for j, r := range rolls {
-			if j == 0 {
-				assert.LessOrEqual(t, r, 100)
-			}
-			assert.GreaterOrEqual(t, r, 1)
-		}
+func TestSystemDeathRoll(t *testing.T) {
+	for i := 0; i < 50; i++ {
+		result := SystemDeathRoll(100)
+		assert.GreaterOrEqual(t, result, 1)
+		assert.LessOrEqual(t, result, 100)
 	}
+	// Edge case: ceiling of 1
+	result := SystemDeathRoll(1)
+	assert.Equal(t, 1, result)
 }
