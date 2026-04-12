@@ -17,35 +17,64 @@ import (
 func checkIfTestMode() bool {
 	// Best-effort load; .env may not exist (e.g. in production or CI).
 	_ = godotenv.Load()
+	testMode := os.Getenv("TEST_MODE") == "True"
 
-	testMode := os.Getenv("TEST_MODE")
-
-	return testMode == "True"
+	//if testMode {
+	//	log.Print("TEST MODE: Using random.org is disabled")
+	//} else {
+	//	log.Print("TEST MODE: Using random.org is enabled")
+	//}
+	return testMode
 }
 
 func GetRandomInt(ceiling int) int {
-	// returns a integer in the closed interval [1, ceiling]
+	// Returns an integer in the closed interval [1, ceiling]
+	if ceiling == 0 {
+		return 1
+	}
+
+	fallbackURL := fmt.Sprintf("https://rng-api.fastapicloud.dev/random/%d", ceiling)
+	localFallback := func() int { return rand.Intn(ceiling) }
+
+	tryRequest := func(url string) (int, bool) {
+		result, err := MakeRequest(url)
+		if err != nil || result == -1 {
+			return 0, false
+		}
+		return result, true
+	}
 
 	if checkIfTestMode() {
-		// stop program from requesting random.org if it is in test mode
-		fmt.Println("TEST MODE: Using random.org is disabled")
-		result := rand.Intn(ceiling) + 1
+		if result, ok := tryRequest(fallbackURL); ok {
+			return result
+		}
+		return localFallback()
+	}
+
+	// Production: try random.org → fallback API → local rand
+	primaryURL := fmt.Sprintf(
+		"https://www.random.org/integers/?num=1&min=1&max=%d&col=1&base=10&format=plain&rnd=new", ceiling,
+	)
+	if result, ok := tryRequest(primaryURL); ok {
 		return result
 	}
-	fmt.Println("TEST MODE: Using random.org is enabled")
-	RandomIntURL := fmt.Sprintf("https://www.random.org/integers/?num=1&min=1&max=%d&col=1&base=10&format=plain&rnd=new", ceiling)
+	if result, ok := tryRequest(fallbackURL); ok {
+		return result
+	}
+	return localFallback()
+}
 
-	request := NewGetRandomIntRequest(RandomIntURL)
+func MakeRequest(url string) (int, error) {
+	request := NewGetRandomIntRequest(url)
 	response, err := NewGetRandomIntResponseFromClient(request)
 	if err != nil {
-		// backup
-		result := rand.Intn(ceiling)
-		return result
+		fmt.Println("Error: ", err)
+		return -1, err
 	}
 	defer response.Body.Close()
 
 	result := ExtractRandomInteger(response)
-	return result
+	return result, nil
 }
 
 func NewGetRandomIntRequest(url string) *http.Request {

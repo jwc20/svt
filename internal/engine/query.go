@@ -1,32 +1,55 @@
 package engine
 
-func IsStarved(gs *GameState) bool {
-	return gs.Inventory.Food < 0
+var Route = []string{
+	"San Jose",
+	"Santa Clara",
+	"Sunnyvale",
+	"Mountain View",
+	"Palo Alto",
+	"Menlo Park",
+	"Redwood City",
+	"San Mateo",
+	"Hillsborough",
+	"San Bruno",
+	"Daly City",
+	"San Francisco",
+}
+
+func CurrentLocation(turn int) string {
+	if turn < 1 {
+		return Route[0]
+	}
+	if turn > len(Route) {
+		return Route[len(Route)-1]
+	}
+	return Route[turn-1]
+}
+
+func IsBankrupt(gs *GameState) bool {
+	return gs.Cash < 0
+}
+
+func IsGhostTown(gs *GameState) bool {
+	return gs.Hype < 5
+}
+
+func IsSystemFailure(gs *GameState) bool {
+	return TechHealth(gs) < 0
 }
 
 func IsArrived(gs *GameState) bool {
-	return gs.Trip.Mileage >= TotalRequiredMileage
+	return gs.Miles >= TotalRequiredMileage
 }
 
-func NeedsAilmentCheck(gs *GameState) bool {
-	return gs.Flags.Injured || gs.Flags.Ill
-}
-
-func DateName(turn int) string {
-	dates := []string{
-		"MARCH 29", "APRIL 12", "APRIL 26", "MAY 10", "MAY 24",
-		"JUNE 7", "JUNE 21", "JULY 5", "JULY 19", "AUGUST 2",
-		"AUGUST 16", "AUGUST 31", "SEPTEMBER 13", "SEPTEMBER 27",
-		"OCTOBER 11", "OCTOBER 25", "NOVEMBER 8", "NOVEMBER 22",
-		"DECEMBER 6", "DECEMBER 20",
+func CheckLoseCondition(gs *GameState) (string, bool) {
+	if IsBankrupt(gs) {
+		return "BANKRUPT! You ran out of cash.", true
 	}
-	weekdays := []string{
-		"SATURDAY", "SUNDAY", "MONDAY", "TUESDAY",
-		"WEDNESDAY", "THURSDAY", "FRIDAY",
+	if IsGhostTown(gs) {
+		return "GHOST TOWN! Your hype dropped too low -- no one cares about your product anymore.", true
 	}
-	if turn < 1 || turn > len(dates) {
-		return "WINTER"
+	if IsSystemFailure(gs) {
+		return "TOTAL SYSTEM FAILURE! Tech debt and bugs have destroyed your infrastructure.", true
 	}
-	idx := turn - 1
-	return weekdays[idx%len(weekdays)] + ", " + dates[idx] + ", 1847"
+	return "", false
 }

@@ -1,74 +1,199 @@
 package engine
 
 import (
+	"math"
+
+	"charm.land/log/v2"
 	"github.com/jwc20/svt/internal/rand"
 )
 
-func SetShootingLevel(gs *GameState, level int) bool {
-	if level < 1 || level > 5 {
+func SetServer(gs *GameState, choice int) bool {
+	switch choice {
+	case 1:
+		gs.Server = ServerFargate
+	case 2:
+		gs.Server = ServerEC2
+	case 3:
+		gs.Server = ServerLambda
+	case 4:
+		gs.Server = ServerThinkPad
+	default:
 		return false
 	}
-	gs.Player.ShootingLevel = level
 	return true
 }
 
-func PurchaseItem(gs *GameState, phase GamePhase, amount int) (bool, string) {
-	switch phase {
-	case PhasePurchaseOxen:
-		if amount < 200 || amount > 300 {
-			return false, "AMOUNT MUST BE BETWEEN $200 AND $300"
-		}
-		gs.Inventory.Oxen = amount
-	case PhasePurchaseFood:
-		if amount < 100 || amount > 200 {
-			return false, "AMOUNT MUST BE BETWEEN $100 AND $200"
-		}
-		gs.Inventory.Food = amount
-	case PhasePurchaseAmmo:
-		if amount < 50 || amount > 100 {
-			return false, "AMOUNT MUST BE BETWEEN $50 AND $100"
-		}
-		gs.Inventory.Ammo = amount
-	case PhasePurchaseClothing:
-		if amount < 50 || amount > 100 {
-			return false, "AMOUNT MUST BE BETWEEN $50 AND $100"
-		}
-		gs.Inventory.Clothing = amount
-	case PhasePurchaseMisc:
-		if amount < 50 || amount > 100 {
-			return false, "AMOUNT MUST BE BETWEEN $50 AND $100"
-		}
-		gs.Inventory.Miscellaneous = amount
+func SetDatabase(gs *GameState, choice int) bool {
+	switch choice {
+	case 1:
+		gs.Database = DBAurora
+	case 2:
+		gs.Database = DBRDS
+	case 3:
+		gs.Database = DBSQLite
 	default:
-		panic("unhandled default case")
+		return false
 	}
-	return true, ""
+	return true
 }
 
-func FinalizePurchases(gs *GameState) (bool, int) {
-	spent := gs.Inventory.Oxen + gs.Inventory.Food + gs.Inventory.Ammo + gs.Inventory.Clothing + gs.Inventory.Miscellaneous
-	remaining := InitialCash - spent
-	if remaining < 0 {
-		return false, remaining
-	}
-	gs.Player.Cash = remaining
-	return true, remaining
+func NeedsAPIGateway(gs *GameState) bool {
+	srv := ServerSpecs[gs.Server]
+	db := DBSpecs[gs.Database]
+	return srv.IsAWS || db.IsAWS
 }
 
-func ApplyEating(gs *GameState, choice int) {
-	if choice < 1 || choice > 3 {
-		choice = 2
+func APIGatewayCost(gs *GameState) int {
+	if NeedsAPIGateway(gs) {
+		return 129
 	}
-	gs.Trip.EatingChoice = choice
-	gs.Inventory.Food -= 8 + 5*choice
+	return 0
 }
 
-func AdvanceMileage(gs *GameState) {
-	gs.Trip.PreviousMileage = gs.Trip.Mileage
-	r := rand.GetRandomInt(10)
-	miles := 200 + (gs.Inventory.Oxen-220)/5 + r*10
-	if gs.Trip.ActionChoice != 1 {
+func AdvanceMileage(gs *GameState) int {
+	// miles += 140 + hype/5 + rand(-20..20)
+	r := rand.GetRandomInt(41) - 21 // gives -20 to 20
+	log.Info("AdvanceMileage called", "randomInt", r)
+	miles := 140 + gs.Hype/5 + r
+	if gs.ActionChoice == 2 {
 		miles /= 2
 	}
-	gs.Trip.Mileage += miles
+	if miles < 0 {
+		miles = 0
+	}
+	gs.Miles += miles
+	return miles
+}
+
+func FixBugs(gs *GameState) (int, int) {
+	if gs.ActionChoice != 2 {
+		return 0, 0
+	}
+	bugsFixedRand := rand.GetRandomInt(4)
+	debtFixedRand := rand.GetRandomInt(3)
+	log.Info("FixBugs called", "bugsFixedRandomInt", bugsFixedRand, "debtFixedRandomInt", debtFixedRand)
+
+	bugsFixed := bugsFixedRand + 1 // rand(2..5)
+	debtFixed := debtFixedRand     // rand(1..3)
+
+	gs.BugCount -= bugsFixed
+	if gs.BugCount < 0 {
+		gs.BugCount = 0
+	}
+	gs.TechDebt -= debtFixed
+	if gs.TechDebt < 0 {
+		gs.TechDebt = 0
+	}
+	return bugsFixed, debtFixed
+}
+
+func SystemDeathRoll(ceiling int) int {
+	r := rand.GetRandomInt(ceiling)
+	log.Info("SystemDeathRoll called", "ceiling", ceiling, "randomInt", r)
+	return r
+}
+
+// CalcCashBurn computes the monthly cost.
+func CalcCashBurn(gs *GameState) int {
+	srv := ServerSpecs[gs.Server]
+	db := DBSpecs[gs.Database]
+	perUserCost := (srv.PerUserCost + db.PerUserCost) * float64(gs.UserCount)
+	return srv.MonthlyCost + db.MonthlyCost + int(math.Ceil(perUserCost)) + APIGatewayCost(gs)
+}
+
+func CalcRevenue(gs *GameState) int {
+	// revenue = hype * 1.5 + rand(0..hype) + randomEvent (randomEvent handled separately)
+	base := int(float64(gs.Hype) * 1.5)
+	bonus := 0
+	if gs.Hype > 0 {
+		bonusRand := rand.GetRandomInt(gs.Hype + 1)
+		log.Info("CalcRevenue called", "randomInt", bonusRand)
+		bonus = bonusRand - 1 // rand(0..hype)
+	}
+	return base + bonus
+}
+
+func ApplyHypeDecay(gs *GameState) int {
+	// hype = hype - 3 - bugCount/2 + rand(-5..5)
+	r := rand.GetRandomInt(11) - 6 // gives -5 to 5
+	log.Info("ApplyHypeDecay called", "randomInt", r)
+	decay := 3 + gs.BugCount/2 - r
+	gs.Hype -= decay
+	if gs.Hype < 0 {
+		gs.Hype = 0
+	}
+	return decay
+}
+
+func AccumulateTechDebt(gs *GameState) int {
+	srv := ServerSpecs[gs.Server]
+	db := DBSpecs[gs.Database]
+	// techDebt += totalMiles/200 + server.debtMod + db.debtMod + rand(0..3)
+	r := rand.GetRandomInt(4)
+	log.Info("AccumulateTechDebt called", "randomInt", r)
+	added := gs.Miles/200 + srv.DebtPerTurn + db.DebtPerTurn + r - 1
+	if added < 0 {
+		added = 0
+	}
+	gs.TechDebt += added
+	return added
+}
+
+func GenerateBugs(gs *GameState) int {
+	srv := ServerSpecs[gs.Server]
+	db := DBSpecs[gs.Database]
+	// newBugs = floor(totalMiles/400) + server.bugMod + db.bugMod
+	newBugs := gs.Miles / 400
+
+	if srv.BugCeiling > 0 {
+		r := rand.GetRandomInt(srv.BugCeiling + 1)
+		log.Info("GenerateBugs called", "source", "server", "randomInt", r)
+		newBugs += r - 1 // rand(0..BugCeiling)
+	}
+	if db.BugCeiling > 0 {
+		r := rand.GetRandomInt(db.BugCeiling + 1)
+		log.Info("GenerateBugs called", "source", "database", "randomInt", r)
+		newBugs += r - 1 // rand(0..BugCeiling)
+	}
+
+	if newBugs < 0 {
+		newBugs = 0
+	}
+	gs.BugCount += newBugs
+	return newBugs
+}
+
+func UpdateUserCount(gs *GameState) {
+	gs.UserCount = gs.Hype * 10
+}
+
+func TechHealth(gs *GameState) int {
+	return 100 - gs.TechDebt - gs.BugCount*3
+}
+
+func ApplyEndOfTurn(gs *GameState) (int, int, int, int, int, string) {
+	// 1. Cash burn deducted
+	cashBurn := CalcCashBurn(gs)
+	gs.Cash -= cashBurn
+
+	// 2. Revenue collected
+	revenue := CalcRevenue(gs)
+	gs.Cash += revenue
+
+	// 3. Hype decay applied
+	hypeDecay := ApplyHypeDecay(gs)
+
+	// 4. Tech debt accumulates
+	techDebtAdded := AccumulateTechDebt(gs)
+
+	// 5. Bugs generated
+	bugsAdded := GenerateBugs(gs)
+
+	// 6. Update user count
+	UpdateUserCount(gs)
+
+	// 7. Random event rolled
+	eventMsg := GenerateEvent(gs)
+
+	return cashBurn, revenue, hypeDecay, techDebtAdded, bugsAdded, eventMsg
 }

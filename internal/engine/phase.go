@@ -3,13 +3,9 @@ package engine
 type GamePhase int
 
 const (
-	PhaseShooting GamePhase = iota
-	PhasePurchaseOxen
-	PhasePurchaseFood
-	PhasePurchaseAmmo
-	PhasePurchaseClothing
-	PhasePurchaseMisc
+	PhaseServerChoice GamePhase = iota
+	PhaseDBChoice
 	PhaseTurnAction
-	PhaseEating
+	PhaseDeathRoll
 	PhaseGameOver
 )
