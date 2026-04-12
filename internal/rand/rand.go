@@ -28,26 +28,40 @@ func checkIfTestMode() bool {
 }
 
 func GetRandomInt(ceiling int) int {
-	// returns a integer in the closed interval [1, ceiling]
-
-	// edge case: ceiling = 0
+	// Returns an integer in the closed interval [1, ceiling]
 	if ceiling == 0 {
 		return 1
 	}
 
-	var RandomIntURL string
-	if checkIfTestMode() {
-		// stop program from requesting random.org if it is in test mode
-		RandomIntURL = fmt.Sprintf("https://rng-api.fastapicloud.dev/random/%d", ceiling)
-	} else {
-		RandomIntURL = fmt.Sprintf("https://www.random.org/integers/?num=1&min=1&max=%d&col=1&base=10&format=plain&rnd=new", ceiling)
+	fallbackURL := fmt.Sprintf("https://rng-api.fastapicloud.dev/random/%d", ceiling)
+	localFallback := func() int { return rand.Intn(ceiling) }
+
+	tryRequest := func(url string) (int, bool) {
+		result, err := MakeRequest(url)
+		if err != nil || result == -1 {
+			return 0, false
+		}
+		return result, true
 	}
-	result, err := MakeRequest(RandomIntURL)
-	if err != nil || result == -1 {
-		result := rand.Intn(ceiling)
+
+	if checkIfTestMode() {
+		if result, ok := tryRequest(fallbackURL); ok {
+			return result
+		}
+		return localFallback()
+	}
+
+	// Production: try random.org → fallback API → local rand
+	primaryURL := fmt.Sprintf(
+		"https://www.random.org/integers/?num=1&min=1&max=%d&col=1&base=10&format=plain&rnd=new", ceiling,
+	)
+	if result, ok := tryRequest(primaryURL); ok {
 		return result
 	}
-	return result
+	if result, ok := tryRequest(fallbackURL); ok {
+		return result
+	}
+	return localFallback()
 }
 
 func MakeRequest(url string) (int, error) {

@@ -372,7 +372,7 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 			fmt.Sprintf("Final hype: %d", m.state.Hype),
 			fmt.Sprintf("Final users: %d", m.state.UserCount),
 			fmt.Sprintf("Tech health: %d", engine.TechHealth(&m.state)),
-			"", DimStyle.Render("Press enter or esc to return to lobby."),
+			"", DimStyle.Render("Press esc to return to lobby."),
 		}
 	default:
 		m.promptTitle = "GAME OVER"
@@ -383,7 +383,7 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 			fmt.Sprintf("Cash: $%d", m.state.Cash),
 			fmt.Sprintf("Hype: %d", m.state.Hype),
 			fmt.Sprintf("Tech health: %d", engine.TechHealth(&m.state)),
-			"", DimStyle.Render("Press enter or esc to return to lobby."),
+			"", DimStyle.Render("Press esc to return to lobby."),
 		}
 	}
 }
