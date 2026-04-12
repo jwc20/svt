@@ -3,6 +3,7 @@ package engine
 import (
 	"math"
 
+	"charm.land/log/v2"
 	"github.com/jwc20/svt/internal/rand"
 )
 
@@ -52,6 +53,7 @@ func APIGatewayCost(gs *GameState) int {
 func AdvanceMileage(gs *GameState) int {
 	// miles += 140 + hype/5 + rand(-20..20)
 	r := rand.GetRandomInt(41) - 21 // gives -20 to 20
+	log.Info("AdvanceMileage called", "randomInt", r)
 	miles := 140 + gs.Hype/5 + r
 	if gs.ActionChoice == 2 {
 		miles /= 2
@@ -67,8 +69,12 @@ func FixBugs(gs *GameState) (int, int) {
 	if gs.ActionChoice != 2 {
 		return 0, 0
 	}
-	bugsFixed := rand.GetRandomInt(4) + 1 // rand(2..5)
-	debtFixed := rand.GetRandomInt(3)     // rand(1..3)
+	bugsFixedRand := rand.GetRandomInt(4)
+	debtFixedRand := rand.GetRandomInt(3)
+	log.Info("FixBugs called", "bugsFixedRandomInt", bugsFixedRand, "debtFixedRandomInt", debtFixedRand)
+
+	bugsFixed := bugsFixedRand + 1 // rand(2..5)
+	debtFixed := debtFixedRand     // rand(1..3)
 
 	gs.BugCount -= bugsFixed
 	if gs.BugCount < 0 {
@@ -82,7 +88,9 @@ func FixBugs(gs *GameState) (int, int) {
 }
 
 func SystemDeathRoll(ceiling int) int {
-	return rand.GetRandomInt(ceiling)
+	r := rand.GetRandomInt(ceiling)
+	log.Info("SystemDeathRoll called", "ceiling", ceiling, "randomInt", r)
+	return r
 }
 
 // CalcCashBurn computes the monthly cost.
@@ -98,7 +106,9 @@ func CalcRevenue(gs *GameState) int {
 	base := int(float64(gs.Hype) * 1.5)
 	bonus := 0
 	if gs.Hype > 0 {
-		bonus = rand.GetRandomInt(gs.Hype+1) - 1 // rand(0..hype)
+		bonusRand := rand.GetRandomInt(gs.Hype + 1)
+		log.Info("CalcRevenue called", "randomInt", bonusRand)
+		bonus = bonusRand - 1 // rand(0..hype)
 	}
 	return base + bonus
 }
@@ -106,6 +116,7 @@ func CalcRevenue(gs *GameState) int {
 func ApplyHypeDecay(gs *GameState) int {
 	// hype = hype - 3 - bugCount/2 + rand(-5..5)
 	r := rand.GetRandomInt(11) - 6 // gives -5 to 5
+	log.Info("ApplyHypeDecay called", "randomInt", r)
 	decay := 3 + gs.BugCount/2 - r
 	gs.Hype -= decay
 	if gs.Hype < 0 {
@@ -118,7 +129,9 @@ func AccumulateTechDebt(gs *GameState) int {
 	srv := ServerSpecs[gs.Server]
 	db := DBSpecs[gs.Database]
 	// techDebt += totalMiles/200 + server.debtMod + db.debtMod + rand(0..3)
-	added := gs.Miles/200 + srv.DebtPerTurn + db.DebtPerTurn + rand.GetRandomInt(4) - 1
+	r := rand.GetRandomInt(4)
+	log.Info("AccumulateTechDebt called", "randomInt", r)
+	added := gs.Miles/200 + srv.DebtPerTurn + db.DebtPerTurn + r - 1
 	if added < 0 {
 		added = 0
 	}
@@ -133,10 +146,14 @@ func GenerateBugs(gs *GameState) int {
 	newBugs := gs.Miles / 400
 
 	if srv.BugCeiling > 0 {
-		newBugs += rand.GetRandomInt(srv.BugCeiling+1) - 1 // rand(0..BugCeiling)
+		r := rand.GetRandomInt(srv.BugCeiling + 1)
+		log.Info("GenerateBugs called", "source", "server", "randomInt", r)
+		newBugs += r - 1 // rand(0..BugCeiling)
 	}
 	if db.BugCeiling > 0 {
-		newBugs += rand.GetRandomInt(db.BugCeiling+1) - 1 // rand(0..BugCeiling)
+		r := rand.GetRandomInt(db.BugCeiling + 1)
+		log.Info("GenerateBugs called", "source", "database", "randomInt", r)
+		newBugs += r - 1 // rand(0..BugCeiling)
 	}
 
 	if newBugs < 0 {

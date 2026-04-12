@@ -86,7 +86,7 @@ func NewGameModel(store engine.GameStore, w, h int) GameModel {
 
 func (m GameModel) Init() tea.Cmd { return nil }
 
-func (m GameModel) rightW() int { return maxInt(m.width*30/100, 22) }
+func (m GameModel) rightW() int { return maxInt(m.width*45/100, 22) }
 func (m GameModel) leftW() int  { return m.width - m.rightW() - 4 }
 
 func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
