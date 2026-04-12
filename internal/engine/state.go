@@ -1,51 +1,90 @@
 package engine
 
-// TODO: these should be configurable
-const TotalRequiredMileage = 2040
-const InitialCash = 700
+import (
+	"github.com/jwc20/svt/internal/rand"
+)
 
-type Player struct {
-	Cash          int
-	ShootingLevel int
+const (
+	TotalRequiredMileage = 2040
+	InitialCash          = 1500
+	InitialHypeBase      = 50
+	TotalTurns           = 12
+)
+
+// ServerOption represents infrastructure server choices.
+type ServerOption int
+
+const (
+	ServerFargate  ServerOption = iota // AWS Fargate
+	ServerEC2                          // AWS EC2
+	ServerLambda                       // AWS Lambda
+	ServerThinkPad                     // Lenovo ThinkPad
+)
+
+// DBOption represents database choices.
+type DBOption int
+
+const (
+	DBAurora DBOption = iota // AWS Aurora
+	DBRDS                    // AWS RDS
+	DBSQLite                 // SQLite
+)
+
+type ServerSpec struct {
+	Name        string
+	MonthlyCost int
+	PerUserCost float64
+	DebtPerTurn int
+	BugCeiling  int // rand(0..BugCeiling) bugs per turn; 0 means no random bugs
+	IsAWS       bool
 }
 
-type Inventory struct {
-	Oxen          int
-	Food          int
-	Ammo          int
-	Clothing      int
-	Miscellaneous int
+type DBSpec struct {
+	Name        string
+	MonthlyCost int
+	PerUserCost float64
+	DebtPerTurn int
+	BugCeiling  int
+	IsAWS       bool
 }
 
-type TripState struct {
-	Mileage         int
-	PreviousMileage int
-	TurnNumber      int
-	CurrentDate     int
-	EatingChoice    int
-	ActionChoice    int
-	FortAvailable   bool
-	FortSpending    int
+var ServerSpecs = map[ServerOption]ServerSpec{
+	ServerFargate:  {Name: "AWS Fargate", MonthlyCost: 0, PerUserCost: 0.05, DebtPerTurn: 0, BugCeiling: 0, IsAWS: true},
+	ServerEC2:      {Name: "AWS EC2", MonthlyCost: 40, PerUserCost: 0, DebtPerTurn: 1, BugCeiling: 1, IsAWS: true},
+	ServerLambda:   {Name: "AWS Lambda", MonthlyCost: 0, PerUserCost: 0.03, DebtPerTurn: 2, BugCeiling: 2, IsAWS: true},
+	ServerThinkPad: {Name: "Lenovo ThinkPad", MonthlyCost: 0, PerUserCost: 0, DebtPerTurn: 4, BugCeiling: 3, IsAWS: false},
 }
 
-type Flags struct {
-	Injured              bool
-	Ill                  bool
-	ClearedSouthPass     bool
-	ClearedBlueMountains bool
-	SouthPassMileage     bool
+var DBSpecs = map[DBOption]DBSpec{
+	DBAurora: {Name: "AWS Aurora", MonthlyCost: 0, PerUserCost: 0.04, DebtPerTurn: 0, BugCeiling: 0, IsAWS: true},
+	DBRDS:    {Name: "AWS RDS", MonthlyCost: 30, PerUserCost: 0, DebtPerTurn: 1, BugCeiling: 1, IsAWS: true},
+	DBSQLite: {Name: "SQLite", MonthlyCost: 0, PerUserCost: 0, DebtPerTurn: 3, BugCeiling: 2, IsAWS: false},
 }
 
 type GameState struct {
-	Player    Player
-	Inventory Inventory
-	Trip      TripState
-	Flags     Flags
+	Cash      int
+	Hype      int
+	TechDebt  int
+	BugCount  int
+	Miles     int
+	UserCount int
+
+	Server   ServerOption
+	Database DBOption
+
+	TurnNumber   int
+	ActionChoice int // 1 = push forward, 2 = fix bugs
 }
 
 func InitState() GameState {
+	hype := InitialHypeBase + rand.GetRandomInt(50)
 	return GameState{
-		Player: Player{Cash: InitialCash},
-		Trip:   TripState{FortAvailable: true},
+		Cash:     InitialCash,
+		Hype:     hype,
+		TechDebt: 0,
+		BugCount: 0,
+		Miles:    0,
+		Server:   ServerFargate,  // default, will be chosen by player
+		Database: DBAurora,       // default, will be chosen by player
 	}
 }

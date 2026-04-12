@@ -37,10 +37,9 @@ var (
 )
 
 type GameModel struct {
-	state         engine.GameState
-	phase         engine.GamePhase
-	store         engine.GameStore
-	purchaseSpent int
+	state engine.GameState
+	phase engine.GamePhase
+	store engine.GameStore
 
 	promptTitle string
 	promptLines []string
@@ -71,7 +70,7 @@ func NewGameModel(store engine.GameStore, w, h int) GameModel {
 
 	m := GameModel{
 		state:    gs,
-		phase:    engine.PhaseShooting,
+		phase:    engine.PhaseServerChoice,
 		store:    store,
 		input:    ti,
 		choiceVP: vp,
@@ -79,14 +78,14 @@ func NewGameModel(store engine.GameStore, w, h int) GameModel {
 		height:   h,
 	}
 
-	m.setShootingPrompt()
+	m.setServerPrompt()
 	return m
 }
 
 func (m GameModel) Init() tea.Cmd { return nil }
 
 func (m GameModel) rightW() int { return maxInt(m.width*30/100, 22) }
-func (m GameModel) leftW() int  { return m.width - m.rightW() - 4 } // -4 for outer border
+func (m GameModel) leftW() int  { return m.width - m.rightW() - 4 }
 
 func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -126,15 +125,12 @@ func (m GameModel) handleInput() (GameModel, tea.Cmd) {
 	}
 
 	switch m.phase {
-	case engine.PhaseShooting:
-		return m.handleShooting(val)
-	case engine.PhasePurchaseOxen, engine.PhasePurchaseFood, engine.PhasePurchaseAmmo,
-		engine.PhasePurchaseClothing, engine.PhasePurchaseMisc:
-		return m.handlePurchase(val)
+	case engine.PhaseServerChoice:
+		return m.handleServerChoice(val)
+	case engine.PhaseDBChoice:
+		return m.handleDBChoice(val)
 	case engine.PhaseTurnAction:
 		return m.handleTurnAction(val)
-	case engine.PhaseEating:
-		return m.handleEating(val)
 	case engine.PhaseGameOver:
 		return m, func() tea.Msg { return BackToLobbyMsg{} }
 	}
@@ -143,119 +139,132 @@ func (m GameModel) handleInput() (GameModel, tea.Cmd) {
 
 // ── phase handlers ────────────────────────────────────────────────
 
-func (m GameModel) handleShooting(val string) (GameModel, tea.Cmd) {
-	level, err := strconv.Atoi(val)
-	if err != nil || !engine.SetShootingLevel(&m.state, level) {
-		m.addChoice("✗ Invalid — enter 1-5")
+func (m GameModel) handleServerChoice(val string) (GameModel, tea.Cmd) {
+	choice, err := strconv.Atoi(val)
+	if err != nil || !engine.SetServer(&m.state, choice) {
+		m.addChoice("Invalid -- enter 1-4")
 		return m, nil
 	}
-	labels := []string{"", "Ace Marksman", "Good Shot", "Fair to Middlin'", "Need More Practice", "Shaky Knees"}
-	m.addChoice(fmt.Sprintf("Shooting: (%d) %s", level, labels[level]))
-	m.phase = engine.PhasePurchaseOxen
-	m.purchaseSpent = 0
-	m.setOxenPrompt()
+	srv := engine.ServerSpecs[m.state.Server]
+	m.addChoice(fmt.Sprintf("Server: %s", srv.Name))
+	m.phase = engine.PhaseDBChoice
+	m.setDBPrompt()
 	return m, nil
 }
 
-func (m GameModel) handlePurchase(val string) (GameModel, tea.Cmd) {
-	amount, err := strconv.Atoi(val)
-	if err != nil {
-		m.addChoice("✗ Enter a number")
+func (m GameModel) handleDBChoice(val string) (GameModel, tea.Cmd) {
+	choice, err := strconv.Atoi(val)
+	if err != nil || !engine.SetDatabase(&m.state, choice) {
+		m.addChoice("Invalid -- enter 1-3")
 		return m, nil
 	}
-	ok, errMsg := engine.PurchaseItem(&m.state, m.phase, amount)
-	if !ok {
-		m.addChoice("✗ " + errMsg)
-		return m, nil
-	}
-	m.purchaseSpent += amount
+	db := engine.DBSpecs[m.state.Database]
+	m.addChoice(fmt.Sprintf("Database: %s", db.Name))
 
-	switch m.phase {
-	case engine.PhasePurchaseOxen:
-		m.addChoice(fmt.Sprintf("Bought $%d Oxen", amount))
-		m.phase = engine.PhasePurchaseFood
-		m.setFoodPrompt()
-	case engine.PhasePurchaseFood:
-		m.addChoice(fmt.Sprintf("Bought $%d Food", amount))
-		m.phase = engine.PhasePurchaseAmmo
-		m.setAmmoPrompt()
-	case engine.PhasePurchaseAmmo:
-		m.addChoice(fmt.Sprintf("Bought $%d Ammo", amount))
-		m.phase = engine.PhasePurchaseClothing
-		m.setClothingPrompt()
-	case engine.PhasePurchaseClothing:
-		m.addChoice(fmt.Sprintf("Bought $%d Clothing", amount))
-		m.phase = engine.PhasePurchaseMisc
-		m.setMiscPrompt()
-	case engine.PhasePurchaseMisc:
-		m.addChoice(fmt.Sprintf("Bought $%d Misc", amount))
-		ok, remaining := engine.FinalizePurchases(&m.state)
-		if !ok {
-			m.addChoice("✗ OVERSPENT — GAME OVER")
-			m.setGameOver("died", "Overspent on supplies")
-			return m, nil
-		}
-		m.addChoice(fmt.Sprintf("Cash left: $%d", remaining))
-		return m.startTurn()
+	// Initialize user count
+	engine.UpdateUserCount(&m.state)
+
+	// Show config summary
+	gw := ""
+	if engine.NeedsAPIGateway(&m.state) {
+		gw = " (+ $129/mo API Gateway)"
 	}
-	return m, nil
+	m.addChoice(fmt.Sprintf("Config set%s", gw))
+	m.addChoice(fmt.Sprintf("Starting: $%d cash, %d hype, %d users", m.state.Cash, m.state.Hype, m.state.UserCount))
+	m.addChoice("---")
+
+	return m.startTurn()
 }
 
 func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 	choice, err := strconv.Atoi(val)
-	if err != nil {
-		choice = 1
+	if err != nil || (choice != 1 && choice != 2) {
+		m.addChoice("Invalid -- enter 1 or 2")
+		return m, nil
 	}
-	m.state.Trip.ActionChoice = choice
-	if choice == 2 {
-		m.addChoice("Chose: Hunt")
-	} else {
-		m.addChoice("Chose: Continue on trail")
-	}
-	m.phase = engine.PhaseEating
-	m.setEatingPrompt()
-	return m, nil
-}
+	m.state.ActionChoice = choice
 
-func (m GameModel) handleEating(val string) (GameModel, tea.Cmd) {
-	choice, err := strconv.Atoi(val)
-	if err != nil || choice < 1 || choice > 3 {
-		choice = 2
+	if choice == 1 {
+		m.addChoice(">> Push forward")
+	} else {
+		m.addChoice(">> Fix bugs")
 	}
-	labels := []string{"", "Poorly", "Moderately", "Well"}
-	m.addChoice(fmt.Sprintf("Eating: (%d) %s", choice, labels[choice]))
-	engine.ApplyEating(&m.state, choice)
-	engine.AdvanceMileage(&m.state)
-	event := engine.GenerateEvent(&m.state)
-	if event != "" {
-		m.addChoice("⚡ " + event)
-	}
-	if engine.NeedsAilmentCheck(&m.state) {
-		survived, msg := engine.HandleAilment(&m.state)
-		m.addChoice(msg)
-		if !survived {
-			m.setGameOver("died", msg)
-			return m, nil
+
+	// Advance mileage
+	miles := engine.AdvanceMileage(&m.state)
+	m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+
+	// Fix bugs if chosen
+	if choice == 2 {
+		bugsFixed, debtFixed := engine.FixBugs(&m.state)
+		m.addChoice(fmt.Sprintf("  Fixed %d bugs, reduced %d tech debt", bugsFixed, debtFixed))
+
+		// Death roll for complete fix
+		won, rolls := engine.DeathRoll(&m.state)
+		rollStrs := make([]string, len(rolls))
+		for i, r := range rolls {
+			rollStrs[i] = strconv.Itoa(r)
+		}
+		m.addChoice(fmt.Sprintf("  Death roll: [%s]", strings.Join(rollStrs, ", ")))
+		if won {
+			extraBugs := m.state.BugCount / 2
+			m.state.BugCount -= extraBugs
+			if m.state.BugCount < 0 {
+				m.state.BugCount = 0
+			}
+			m.addChoice(GoodStyle.Render(fmt.Sprintf("  You won the death roll! %d more bugs squashed!", extraBugs)))
+		} else {
+			m.addChoice(WarnStyle.Render("  You lost the death roll. Some bugs persist."))
 		}
 	}
+
+	// End-of-turn effects
+	cashBurn, revenue, _, techDebtAdded, bugsAdded, eventMsg := engine.ApplyEndOfTurn(&m.state)
+
+	m.addChoice(fmt.Sprintf("  Cash burn: -$%d | Revenue: +$%d | Net: $%d", cashBurn, revenue, m.state.Cash))
+	m.addChoice(fmt.Sprintf("  Tech debt: +%d (total: %d) | New bugs: +%d (total: %d)", techDebtAdded, m.state.TechDebt, bugsAdded, m.state.BugCount))
+	m.addChoice(fmt.Sprintf("  Hype: %d | Users: %d | Tech Health: %d", m.state.Hype, m.state.UserCount, engine.TechHealth(&m.state)))
+
+	if eventMsg != "" {
+		m.addChoice(EventStyle.Render("  EVENT: " + eventMsg))
+	}
+
+	// Check incident
+	survived, incidentMsg := engine.CheckIncident(&m.state)
+	if !survived {
+		m.addChoice(BadStyle.Render("  " + incidentMsg))
+	}
+
+	m.addChoice("---")
+
+	// Check lose conditions
+	if reason, lost := engine.CheckLoseCondition(&m.state); lost {
+		m.addChoice(BadStyle.Render(reason))
+		m.setGameOver("died", reason)
+		return m, nil
+	}
+
+	// Check win
+	if engine.IsArrived(&m.state) {
+		m.addChoice(GoodStyle.Render("You made it to San Francisco!"))
+		m.setGameOver("won", "")
+		return m, nil
+	}
+
+	// Check if we've exceeded max turns
+	if m.state.TurnNumber >= engine.TotalTurns {
+		m.addChoice(BadStyle.Render("You ran out of turns before reaching San Francisco!"))
+		m.setGameOver("died", "Ran out of turns")
+		return m, nil
+	}
+
 	return m.startTurn()
 }
 
 // ── turn management ───────────────────────────────────────────────
 
 func (m GameModel) startTurn() (GameModel, tea.Cmd) {
-	m.state.Trip.TurnNumber++
-	m.state.Trip.CurrentDate = m.state.Trip.TurnNumber
-	if engine.IsStarved(&m.state) {
-		m.addChoice("✗ STARVED TO DEATH")
-		m.setGameOver("starved", "Starved to death")
-		return m, nil
-	}
-	if engine.IsArrived(&m.state) {
-		m.addChoice("★ ARRIVED IN OREGON!")
-		m.setGameOver("won", "")
-		return m, nil
-	}
+	m.state.TurnNumber++
 	m.phase = engine.PhaseTurnAction
 	m.setTurnPrompt()
 	return m, nil
@@ -263,83 +272,40 @@ func (m GameModel) startTurn() (GameModel, tea.Cmd) {
 
 // ── prompt setters ────────────────────────────────────────────────
 
-func (m *GameModel) setShootingPrompt() {
-	m.promptTitle = "How good a shot are you?"
+func (m *GameModel) setServerPrompt() {
+	m.promptTitle = "CHOOSE YOUR SERVER INFRASTRUCTURE"
 	m.promptLines = []string{
+		"Your startup needs a server. Choose wisely!",
 		"",
-		"(1) Ace Marksman",
-		"(2) Good Shot",
-		"(3) Fair to Middlin'",
-		"(4) Need More Practice",
-		"(5) Shaky Knees",
+		"(1) AWS Fargate    $0/mo + $0.05/user  | 0 debt/turn | 0 bugs/turn",
+		"(2) AWS EC2        $40/mo + $0/user     | +1 debt/turn | 0-1 bugs/turn",
+		"(3) AWS Lambda     $0/mo + $0.03/user   | +2 debt/turn | 0-2 bugs/turn",
+		"(4) Lenovo ThinkPad $0/mo + $0/user     | +4 debt/turn | 0-3 bugs/turn",
 	}
 }
 
-func (m *GameModel) setOxenPrompt() {
-	m.promptTitle = "PURCHASE SUPPLIES"
+func (m *GameModel) setDBPrompt() {
+	m.promptTitle = "CHOOSE YOUR DATABASE"
 	m.promptLines = []string{
-		fmt.Sprintf("You have $%d to spend on your trip.", engine.InitialCash),
+		fmt.Sprintf("Server: %s", engine.ServerSpecs[m.state.Server].Name),
 		"",
-		"How much do you want to spend on your oxen team?",
-		DimStyle.Render("(Amount must be $200 – $300)"),
-	}
-}
-
-func (m *GameModel) setFoodPrompt() {
-	m.promptTitle = "PURCHASE SUPPLIES"
-	m.promptLines = []string{
-		fmt.Sprintf("Remaining budget: $%d", engine.InitialCash-m.purchaseSpent),
-		"", "How much do you want to spend on food?",
-		DimStyle.Render("(Amount must be $100 – $200)"),
-	}
-}
-
-func (m *GameModel) setAmmoPrompt() {
-	m.promptTitle = "PURCHASE SUPPLIES"
-	m.promptLines = []string{
-		fmt.Sprintf("Remaining budget: $%d", engine.InitialCash-m.purchaseSpent),
-		"", "How much do you want to spend on ammo?",
-		DimStyle.Render("(Amount must be $50 – $100)"),
-	}
-}
-
-func (m *GameModel) setClothingPrompt() {
-	m.promptTitle = "PURCHASE SUPPLIES"
-	m.promptLines = []string{
-		fmt.Sprintf("Remaining budget: $%d", engine.InitialCash-m.purchaseSpent),
-		"", "How much do you want to spend on clothing?",
-		DimStyle.Render("(Amount must be $50 – $100)"),
-	}
-}
-
-func (m *GameModel) setMiscPrompt() {
-	m.promptTitle = "PURCHASE SUPPLIES"
-	m.promptLines = []string{
-		fmt.Sprintf("Remaining budget: $%d", engine.InitialCash-m.purchaseSpent),
-		"", "How much do you want to spend on miscellaneous supplies?",
-		DimStyle.Render("(Amount must be $50 – $100)"),
-	}
-}
-
-func (m *GameModel) setEatingPrompt() {
-	m.promptTitle = "EATING"
-	m.promptLines = []string{
-		"Do you want to eat:",
+		"(1) AWS Aurora  $0/mo + $0.04/user  | 0 debt/turn | 0 bugs/turn",
+		"(2) AWS RDS     $30/mo + $0/user     | +1 debt/turn | 0-1 bugs/turn",
+		"(3) SQLite      $0/mo + $0/user      | +3 debt/turn | 0-2 bugs/turn",
 		"",
-		"(1) Poorly",
-		"(2) Moderately",
-		"(3) Well",
+		DimStyle.Render("Note: AWS API Gateway ($129/mo) applies if any AWS service is selected."),
 	}
 }
 
 func (m *GameModel) setTurnPrompt() {
-	t := m.state.Trip.TurnNumber
-	m.promptTitle = fmt.Sprintf("TURN %d — %s", t, engine.DateName(t))
+	t := m.state.TurnNumber
+	location := engine.CurrentLocation(t)
+	m.promptTitle = fmt.Sprintf("TURN %d / %d -- %s", t, engine.TotalTurns, location)
 	m.promptLines = []string{
 		"What do you want to do?",
 		"",
-		"(1) Continue on trail",
-		"(2) Hunt for food",
+		"(1) Push forward -- advance miles normally",
+		"(2) Fix bugs -- miles halved, fix bugs + death roll",
 	}
 }
 
@@ -351,25 +317,25 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 
 	switch result {
 	case "won":
-		m.promptTitle = "★ CONGRATULATIONS! ★"
+		m.promptTitle = "CONGRATULATIONS!"
 		m.promptLines = []string{
-			"", GoodStyle.Render("YOU MADE IT TO OREGON CITY!"), "",
-			fmt.Sprintf("Turns taken: %d", m.state.Trip.TurnNumber),
-			fmt.Sprintf("Cash remaining: $%d", m.state.Player.Cash),
-			"", DimStyle.Render("Press enter or esc to return to lobby."),
-		}
-	case "starved":
-		m.promptTitle = "✗ GAME OVER"
-		m.promptLines = []string{
-			"", BadStyle.Render("YOU RAN OUT OF FOOD AND STARVED TO DEATH."), "",
-			fmt.Sprintf("Mileage reached: %d / %d", m.state.Trip.Mileage, engine.TotalRequiredMileage),
+			"", GoodStyle.Render("YOUR STARTUP MADE IT TO SAN FRANCISCO!"), "",
+			fmt.Sprintf("Turns taken: %d", m.state.TurnNumber),
+			fmt.Sprintf("Cash remaining: $%d", m.state.Cash),
+			fmt.Sprintf("Final hype: %d", m.state.Hype),
+			fmt.Sprintf("Final users: %d", m.state.UserCount),
+			fmt.Sprintf("Tech health: %d", engine.TechHealth(&m.state)),
 			"", DimStyle.Render("Press enter or esc to return to lobby."),
 		}
 	default:
-		m.promptTitle = "✗ GAME OVER"
+		m.promptTitle = "GAME OVER"
 		m.promptLines = []string{
 			"", BadStyle.Render(deathMsg), "",
-			fmt.Sprintf("Mileage reached: %d / %d", m.state.Trip.Mileage, engine.TotalRequiredMileage),
+			fmt.Sprintf("Mileage reached: %d / %d", m.state.Miles, engine.TotalRequiredMileage),
+			fmt.Sprintf("Turns played: %d", m.state.TurnNumber),
+			fmt.Sprintf("Cash: $%d", m.state.Cash),
+			fmt.Sprintf("Hype: %d", m.state.Hype),
+			fmt.Sprintf("Tech health: %d", engine.TechHealth(&m.state)),
 			"", DimStyle.Render("Press enter or esc to return to lobby."),
 		}
 	}
@@ -380,12 +346,11 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 func (m GameModel) View() tea.View {
 	lw := m.leftW()
 	rw := m.rightW()
-	innerH := m.height - 4 // outer border chrome
+	innerH := m.height - 4
 
-	// left: prompt panel, text centered in available space
 	promptText := FocusLabel.Render(m.promptTitle) + "\n\n" +
 		strings.Join(m.promptLines, "\n")
-	leftContentH := maxInt(innerH-4, 6) // -4 for prompt border chrome
+	leftContentH := maxInt(innerH-4, 6)
 	centeredPrompt := lipgloss.Place(lw-6, leftContentH,
 		lipgloss.Center, lipgloss.Center, promptText)
 	leftCol := promptPanel.Width(lw - 2).Height(leftContentH).Render(centeredPrompt)
@@ -395,22 +360,20 @@ func (m GameModel) View() tea.View {
 	sBox := statusBox.Width(rw - 2).Render(m.renderStatus())
 	statusRenderedH := lipgloss.Height(sBox)
 
-	logPanelH := maxInt(innerH-statusRenderedH-2, 4) // -2 for log border chrome
+	logPanelH := maxInt(innerH-statusRenderedH-2, 4)
 	logInnerH := maxInt(logPanelH, 2)
 
 	var logInner string
 	if m.gameOver {
-		// entire inner space is the viewport
 		m.choiceVP.SetWidth(maxInt(rw-6, 10))
 		m.choiceVP.SetHeight(logInnerH)
 		logInner = m.choiceVP.View()
 	} else {
-		// viewport gets space minus 1 line for input
 		inputLine := PromptStyle.Render("") + m.input.View()
-		vpH := maxInt(logInnerH-2, 1) // -2: 1 for input, 1 for separator
+		vpH := maxInt(logInnerH-2, 1)
 		m.choiceVP.SetWidth(maxInt(rw-6, 10))
 		m.choiceVP.SetHeight(vpH)
-		separator := DimStyle.Render(strings.Repeat("─", maxInt(rw-6, 10)))
+		separator := DimStyle.Render(strings.Repeat("~", maxInt(rw-6, 10)))
 		logInner = m.choiceVP.View() + "\n" + separator + "\n" + inputLine
 	}
 
@@ -431,34 +394,59 @@ func (m GameModel) View() tea.View {
 func (m GameModel) renderStatus() string {
 	var sb strings.Builder
 
-	turn := m.state.Trip.TurnNumber
+	turn := m.state.TurnNumber
 	if turn < 1 {
-		sb.WriteString(PlainLabel.Render("Date") + "\n")
-		sb.WriteString("Preparing...\n")
+		sb.WriteString(PlainLabel.Render("Location") + "\n")
+		sb.WriteString("Setting up...\n")
 	} else {
-		sb.WriteString(PlainLabel.Render("Date") + "\n")
-		sb.WriteString(engine.DateName(turn) + "\n")
+		sb.WriteString(PlainLabel.Render("Location") + "\n")
+		sb.WriteString(fmt.Sprintf("Turn %d: %s\n", turn, engine.CurrentLocation(turn)))
 	}
+
 	sb.WriteString(PlainLabel.Render("Mileage") + "\n")
-	sb.WriteString(fmt.Sprintf("%d / %d\n", m.state.Trip.Mileage, engine.TotalRequiredMileage))
+	sb.WriteString(fmt.Sprintf("%d / %d\n", m.state.Miles, engine.TotalRequiredMileage))
 
 	sb.WriteString("\n")
-	sb.WriteString(PlainLabel.Render("Inventory") + "\n")
+	sb.WriteString(PlainLabel.Render("Startup Stats") + "\n")
 
-	inv := m.state.Inventory
-	sb.WriteString(fmt.Sprintf("Oxen: %d\n", inv.Oxen))
-	sb.WriteString(fmt.Sprintf("Food: %d\n", inv.Food))
-	sb.WriteString(fmt.Sprintf("Ammo: %d\n", inv.Ammo))
-	sb.WriteString(fmt.Sprintf("Clothing: %d\n", inv.Clothing))
-	sb.WriteString(fmt.Sprintf("Misc: %d\n", inv.Miscellaneous))
-	sb.WriteString(fmt.Sprintf("Cash: $%d", m.state.Player.Cash))
+	// Cash with color
+	cashStr := fmt.Sprintf("$%d", m.state.Cash)
+	if m.state.Cash < 200 {
+		cashStr = BadStyle.Render(cashStr)
+	} else if m.state.Cash < 500 {
+		cashStr = WarnStyle.Render(cashStr)
+	}
+	sb.WriteString(fmt.Sprintf("Cash: %s\n", cashStr))
 
-	if m.state.Flags.Injured {
-		sb.WriteString("\n" + BadStyle.Render("⚠ INJURED"))
+	// Hype with color
+	hypeStr := fmt.Sprintf("%d", m.state.Hype)
+	if m.state.Hype < 15 {
+		hypeStr = BadStyle.Render(hypeStr)
+	} else if m.state.Hype < 30 {
+		hypeStr = WarnStyle.Render(hypeStr)
 	}
-	if m.state.Flags.Ill {
-		sb.WriteString("\n" + BadStyle.Render("⚠ ILL"))
+	sb.WriteString(fmt.Sprintf("Hype: %s\n", hypeStr))
+
+	sb.WriteString(fmt.Sprintf("Users: %d\n", m.state.UserCount))
+
+	// Tech Health with color
+	th := engine.TechHealth(&m.state)
+	thStr := fmt.Sprintf("%d", th)
+	if th < 20 {
+		thStr = BadStyle.Render(thStr)
+	} else if th < 40 {
+		thStr = WarnStyle.Render(thStr)
 	}
+	sb.WriteString(fmt.Sprintf("Tech Health: %s\n", thStr))
+
+	sb.WriteString(fmt.Sprintf("Tech Debt: %d\n", m.state.TechDebt))
+	sb.WriteString(fmt.Sprintf("Bugs: %d\n", m.state.BugCount))
+
+	// Infrastructure
+	sb.WriteString("\n")
+	sb.WriteString(PlainLabel.Render("Infrastructure") + "\n")
+	sb.WriteString(fmt.Sprintf("Server: %s\n", engine.ServerSpecs[m.state.Server].Name))
+	sb.WriteString(fmt.Sprintf("DB: %s", engine.DBSpecs[m.state.Database].Name))
 
 	return sb.String()
 }
