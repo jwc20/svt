@@ -168,3 +168,27 @@ Where `apiGatewayCost = 129` if either server or database is an AWS service, oth
 2. Revenue collected
 3. Hype decay applied
 4. Random event rolled
+
+---
+
+## End Game Scoring
+
+**Score = cash + (hype * 10) + (techHealth * 5) - (totalTurns * 20) + serverBonus + dbBonus**
+
+**Server Score Bonus:**
+
+| Option | Bonus |
+|---|---|
+| Lenovo ThinkPad | +200 |
+| AWS Lambda | +100 |
+| AWS EC2 | +50 |
+| AWS Fargate | +0 |
+
+**Database Score Bonus:**
+
+| Option | Bonus |
+|---|---|
+| SQLite | +150 |
+| AWS RDS | +75 |
+| AWS Aurora | +0 |
+
