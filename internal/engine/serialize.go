@@ -24,12 +24,15 @@ func Serialize(gs *GameState) string {
 	turns := make([]string, len(gs.TurnHistory))
 	for i, t := range gs.TurnHistory {
 		s := fmt.Sprintf("a%d", t.Action)
-		if t.Action == 2 {
+		switch t.Action {
+		case 2:
 			if t.DeathRoll == DeathRollWin {
 				s += "w"
 			} else {
 				s += "l"
 			}
+		case 3:
+			// no suffix needed for marketing push
 		}
 		turns[i] = s
 	}
@@ -137,6 +140,9 @@ func Deserialize(s string) (*GameState, error) {
 				default:
 					return nil, fmt.Errorf("invalid death roll result: %s", tp)
 				}
+			case '3':
+				entry.Action = 3
+				entry.DeathRoll = DeathRollNone
 			default:
 				return nil, fmt.Errorf("invalid action: %s", tp)
 			}

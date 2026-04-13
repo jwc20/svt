@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/ssh"
 	gossh "golang.org/x/crypto/ssh"
 
+	"github.com/jwc20/svt/internal/hackernews"
 	"github.com/jwc20/svt/internal/store"
 	"github.com/jwc20/svt/internal/ui"
 )
@@ -92,14 +93,21 @@ func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 		// Marshal the public key to authorized_keys format (e.g. "ssh-ed25519 AAAA...")
 		pubKeyStr := strings.TrimSpace(string(gossh.MarshalAuthorizedKey(key)))
 
-		playerID, err := db.CreatePlayer(pubKeyStr)
+		userName := s.User()
+
+		playerID, err := db.CreatePlayer(pubKeyStr, userName)
 		if err != nil {
 			wish.Fatalf(s, "could not create player: %v", err)
 			return nil
 		}
 
-		userName := s.User()
-		m := ui.NewRootModel(db, playerID, userName)
+		bonusHype, err := db.GetBonusHype(playerID)
+		if err != nil || bonusHype < 0 {
+			bonusHype = hackernews.FetchBonusHype(userName)
+			_ = db.SetBonusHype(playerID, bonusHype)
+		}
+
+		m := ui.NewRootModel(db, playerID, userName, bonusHype)
 		opts := bubbletea.MakeOptions(s)
 
 		p := tea.NewProgram(m, opts...)

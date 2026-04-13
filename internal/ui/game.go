@@ -63,7 +63,7 @@ type GameModel struct {
 	confirmLeave bool
 }
 
-func NewGameModel(st engine.GameStore, playerID int64, w, h int) GameModel {
+func NewGameModel(st engine.GameStore, playerID int64, bonusHype int, w, h int) GameModel {
 	ti := textinput.New()
 	ti.Placeholder = "Enter choice..."
 	ti.CharLimit = 20
@@ -97,7 +97,7 @@ func NewGameModel(st engine.GameStore, playerID int64, w, h int) GameModel {
 	}
 
 	// New game
-	m.state = engine.InitState()
+	m.state = engine.InitState(bonusHype)
 	m.phase = engine.PhaseServerChoice
 	m.setServerPrompt()
 	return m
@@ -218,8 +218,8 @@ func (m GameModel) handleDBChoice(val string) (GameModel, tea.Cmd) {
 
 func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 	choice, err := strconv.Atoi(val)
-	if err != nil || (choice != 1 && choice != 2) {
-		m.addChoice("Invalid -- enter 1 or 2")
+	if err != nil || (choice < 1 || choice > 3) {
+		m.addChoice("Invalid -- enter 1, 2, or 3")
 		return m, nil
 	}
 	m.state.ActionChoice = choice
@@ -228,6 +228,23 @@ func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 		m.pendingEntry = engine.TurnEntry{Action: 1, DeathRoll: engine.DeathRollNone}
 		m.addChoice(">> Push forward")
 		miles := engine.AdvanceMileage(&m.state)
+		m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+		return m.finishTurn()
+	}
+
+	if choice == 3 {
+		cost := engine.MarketingPushCost(&m.state)
+		if m.state.Cash < cost {
+			m.addChoice(WarnStyle.Render(fmt.Sprintf("  Can't afford marketing push (need $%d, have $%d)", cost, m.state.Cash)))
+			m.addChoice("  Pick a different action.")
+			m.state.ActionChoice = 0
+			return m, nil
+		}
+		m.pendingEntry = engine.TurnEntry{Action: 3, DeathRoll: engine.DeathRollNone}
+		m.addChoice(">> Marketing push")
+		hypeGained, spent := engine.MarketingPush(&m.state)
+		miles := engine.AdvanceMileage(&m.state)
+		m.addChoice(fmt.Sprintf("  Spent $%d on marketing, gained %d hype (now %d)", spent, hypeGained, m.state.Hype))
 		m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
 		return m.finishTurn()
 	}
@@ -388,11 +405,13 @@ func (m *GameModel) setTurnPrompt() {
 	t := m.state.TurnNumber
 	location := engine.CurrentLocation(t)
 	m.promptTitle = fmt.Sprintf("TURN %d / %d -- %s", t, engine.TotalTurns, location)
+	marketingCost := engine.MarketingPushCost(&m.state)
 	m.promptLines = []string{
 		"What do you want to do?",
 		"",
 		"(1) Push forward -- advance miles normally",
 		"(2) Fix bugs -- miles halved, fix bugs + death roll",
+		fmt.Sprintf("(3) Marketing push (cost: $%d) -- miles halved, spend cash to gain hype", marketingCost),
 	}
 }
 

@@ -55,7 +55,7 @@ func AdvanceMileage(gs *GameState) int {
 	r := rand.GetRandomInt(41) - 21 // gives -20 to 20
 	log.Info("AdvanceMileage called", "randomInt", r)
 	miles := 140 + gs.Hype/5 + r
-	if gs.ActionChoice == 2 {
+	if gs.ActionChoice == 2 || gs.ActionChoice == 3 {
 		miles /= 2
 	}
 	if miles < 0 {
@@ -85,6 +85,19 @@ func FixBugs(gs *GameState) (int, int) {
 		gs.TechDebt = 0
 	}
 	return bugsFixed, debtFixed
+}
+
+func MarketingPushCost(gs *GameState) int {
+	return int(math.Round(50 + float64(gs.Hype)*0.5))
+}
+
+func MarketingPush(gs *GameState) (int, int) {
+	cost := MarketingPushCost(gs)
+	gs.Cash -= cost
+	hypeGained := 15 + rand.GetRandomInt(11) // 15 + rand(0..10)
+	log.Info("MarketingPush called", "cost", cost, "hypeGained", hypeGained)
+	gs.Hype += hypeGained
+	return hypeGained, cost
 }
 
 func SystemDeathRoll(ceiling int) int {

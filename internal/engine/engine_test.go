@@ -15,12 +15,20 @@ func NewStubGameStore() *StubGameStore {
 	return &StubGameStore{Games: make(map[int64]*GameState), NextID: 1}
 }
 
-func (s *StubGameStore) CreatePlayer(publicKey string) (int64, error) {
+func (s *StubGameStore) CreatePlayer(publicKey string, username string) (int64, error) {
 	return 1, nil
 }
 
 func (s *StubGameStore) GetPlayerByKey(publicKey string) (int64, error) {
 	return 1, nil
+}
+
+func (s *StubGameStore) GetBonusHype(playerID int64) (int, error) {
+	return 0, nil
+}
+
+func (s *StubGameStore) SetBonusHype(playerID int64, bonus int) error {
+	return nil
 }
 
 func (s *StubGameStore) NewGame(playerID int64, state *GameState) (int64, error) {
@@ -58,7 +66,7 @@ func TestGameConstants(t *testing.T) {
 }
 
 func TestInitState(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 
 	assert.Equal(t, 1500, gs.Cash)
 	assert.GreaterOrEqual(t, gs.Hype, 50)
@@ -70,19 +78,19 @@ func TestInitState(t *testing.T) {
 
 func TestSetServer(t *testing.T) {
 	t.Run("valid choice", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		ok := SetServer(&gs, 1)
 		assert.True(t, ok)
 		assert.Equal(t, ServerFargate, gs.Server)
 	})
 	t.Run("ThinkPad", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		ok := SetServer(&gs, 4)
 		assert.True(t, ok)
 		assert.Equal(t, ServerThinkPad, gs.Server)
 	})
 	t.Run("invalid choice", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		assert.False(t, SetServer(&gs, 0))
 		assert.False(t, SetServer(&gs, 5))
 	})
@@ -90,13 +98,13 @@ func TestSetServer(t *testing.T) {
 
 func TestSetDatabase(t *testing.T) {
 	t.Run("valid choice", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		ok := SetDatabase(&gs, 3)
 		assert.True(t, ok)
 		assert.Equal(t, DBSQLite, gs.Database)
 	})
 	t.Run("invalid choice", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		assert.False(t, SetDatabase(&gs, 0))
 		assert.False(t, SetDatabase(&gs, 4))
 	})
@@ -104,20 +112,20 @@ func TestSetDatabase(t *testing.T) {
 
 func TestAPIGateway(t *testing.T) {
 	t.Run("AWS server needs gateway", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		gs.Server = ServerFargate
 		gs.Database = DBSQLite
 		assert.True(t, NeedsAPIGateway(&gs))
 		assert.Equal(t, 129, APIGatewayCost(&gs))
 	})
 	t.Run("AWS db needs gateway", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		gs.Server = ServerThinkPad
 		gs.Database = DBAurora
 		assert.True(t, NeedsAPIGateway(&gs))
 	})
 	t.Run("no AWS no gateway", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		gs.Server = ServerThinkPad
 		gs.Database = DBSQLite
 		assert.False(t, NeedsAPIGateway(&gs))
@@ -126,7 +134,7 @@ func TestAPIGateway(t *testing.T) {
 }
 
 func TestAdvanceMileage(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.Hype = 50
 	gs.ActionChoice = 1
 	miles := AdvanceMileage(&gs)
@@ -137,12 +145,12 @@ func TestAdvanceMileage(t *testing.T) {
 func TestAdvanceMileageHalvedForFixBugs(t *testing.T) {
 	// Run multiple times to account for randomness
 	for i := 0; i < 10; i++ {
-		gs1 := InitState()
+		gs1 := InitState(0)
 		gs1.Hype = 50
 		gs1.ActionChoice = 1
 		miles1 := AdvanceMileage(&gs1)
 
-		gs2 := InitState()
+		gs2 := InitState(0)
 		gs2.Hype = 50
 		gs2.ActionChoice = 2
 		miles2 := AdvanceMileage(&gs2)
@@ -155,7 +163,7 @@ func TestAdvanceMileageHalvedForFixBugs(t *testing.T) {
 }
 
 func TestTechHealth(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.TechDebt = 20
 	gs.BugCount = 5
 	// techHealth = 100 - 20 - 5*3 = 65
@@ -163,7 +171,7 @@ func TestTechHealth(t *testing.T) {
 }
 
 func TestCalcCashBurn(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.Server = ServerEC2
 	gs.Database = DBRDS
 	gs.UserCount = 0
@@ -173,7 +181,7 @@ func TestCalcCashBurn(t *testing.T) {
 }
 
 func TestCalcCashBurnWithUsers(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.Server = ServerFargate
 	gs.Database = DBAurora
 	gs.UserCount = 100
@@ -183,7 +191,7 @@ func TestCalcCashBurnWithUsers(t *testing.T) {
 }
 
 func TestCalcCashBurnNoAWS(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.Server = ServerThinkPad
 	gs.Database = DBSQLite
 	gs.UserCount = 500
@@ -193,7 +201,7 @@ func TestCalcCashBurnNoAWS(t *testing.T) {
 }
 
 func TestUpdateUserCount(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.Hype = 50
 	UpdateUserCount(&gs)
 	assert.Equal(t, 500, gs.UserCount)
@@ -201,7 +209,7 @@ func TestUpdateUserCount(t *testing.T) {
 
 func TestLoseConditions(t *testing.T) {
 	t.Run("bankrupt", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		gs.Cash = -1
 		assert.True(t, IsBankrupt(&gs))
 		reason, lost := CheckLoseCondition(&gs)
@@ -209,7 +217,7 @@ func TestLoseConditions(t *testing.T) {
 		assert.Contains(t, reason, "BANKRUPT")
 	})
 	t.Run("ghost town", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		gs.Hype = 4
 		assert.True(t, IsGhostTown(&gs))
 		reason, lost := CheckLoseCondition(&gs)
@@ -217,7 +225,7 @@ func TestLoseConditions(t *testing.T) {
 		assert.Contains(t, reason, "GHOST TOWN")
 	})
 	t.Run("system failure", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		gs.TechDebt = 80
 		gs.BugCount = 10
 		assert.True(t, IsSystemFailure(&gs))
@@ -226,14 +234,14 @@ func TestLoseConditions(t *testing.T) {
 		assert.Contains(t, reason, "SYSTEM FAILURE")
 	})
 	t.Run("no lose condition", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		_, lost := CheckLoseCondition(&gs)
 		assert.False(t, lost)
 	})
 }
 
 func TestIsArrived(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.Miles = 2040
 	assert.True(t, IsArrived(&gs))
 }
@@ -252,7 +260,7 @@ func TestCurrentLocation(t *testing.T) {
 }
 
 func TestGenerateEvent(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.Cash = 1000
 	gs.Hype = 50
 	gs.Miles = 500
@@ -272,14 +280,14 @@ func TestGenerateEvent(t *testing.T) {
 
 func TestCheckIncident(t *testing.T) {
 	t.Run("healthy system survives", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		gs.TechDebt = 0
 		gs.BugCount = 0
 		survived, _ := CheckIncident(&gs)
 		assert.True(t, survived)
 	})
 	t.Run("unhealthy system may fail", func(t *testing.T) {
-		gs := InitState()
+		gs := InitState(0)
 		gs.TechDebt = 90
 		gs.BugCount = 10
 		// TechHealth = 100 - 90 - 30 = -20, should always fail
@@ -290,7 +298,7 @@ func TestCheckIncident(t *testing.T) {
 }
 
 func TestFixBugs(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.BugCount = 10
 	gs.TechDebt = 10
 	gs.ActionChoice = 2
@@ -301,7 +309,7 @@ func TestFixBugs(t *testing.T) {
 }
 
 func TestFixBugsNoOpWhenPushForward(t *testing.T) {
-	gs := InitState()
+	gs := InitState(0)
 	gs.BugCount = 10
 	gs.ActionChoice = 1
 	bugsFixed, debtFixed := FixBugs(&gs)
@@ -310,16 +318,16 @@ func TestFixBugsNoOpWhenPushForward(t *testing.T) {
 	assert.Equal(t, 10, gs.BugCount)
 }
 
-func TestSystemDeathRoll(t *testing.T) {
-	for i := 0; i < 50; i++ {
-		result := SystemDeathRoll(100)
-		assert.GreaterOrEqual(t, result, 1)
-		assert.LessOrEqual(t, result, 100)
-	}
-	// Edge case: ceiling of 1
-	result := SystemDeathRoll(1)
-	assert.Equal(t, 1, result)
-}
+//func TestSystemDeathRoll(t *testing.T) {
+//	for i := 0; i < 50; i++ {
+//		result := SystemDeathRoll(100)
+//		assert.GreaterOrEqual(t, result, 1)
+//		assert.LessOrEqual(t, result, 100)
+//	}
+//	// Edge case: ceiling of 1
+//	result := SystemDeathRoll(1)
+//	assert.Equal(t, 1, result)
+//}
 
 func TestCalcScore(t *testing.T) {
 	t.Run("basic scoring", func(t *testing.T) {

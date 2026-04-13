@@ -7,7 +7,7 @@
 
 # Silicon Trail
 
-<em>Don't forget to pay the AWS bills</em>
+<em>Don't forget to pay the AWS bills!</em>
 
 <!-- BADGES -->
 
@@ -27,41 +27,154 @@
 
 <br>
 
+---
+
+## Deliverables
+
+- See [deliverables-and-req.md](notes/deliverables-and-req.md)
+
+## Game Design
+
+- See [game-design-doc.md](notes/game-design-doc.md)
+
+## AI Uses
+
+- See [ai_uses](notes/ai-uses.md)
+
+## Tradeoffs & If I had more time
+
+- See [tradeoffs-and-if-i-had-more-time.md](notes/tradeoffs-and-if-i-had-more-time.md)
+
+### API Choices
+
+- [random.org](https://www.random.org/)
+- [HackerNews Algolia](https://hn.algolia.com)
+
+<br>
+
+---
+
+<br>
 
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)
-- [Project Structure](#project-structure)
-    - [Project Index](#project-index)
 - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-    - [Usage](#usage)
-    - [Testing](#testing)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Testing](#testing)
+- [Project Structure](#project-structure)
+  - [Project Index](#project-index)
 
+<br>
+
+<br>
 
 ---
 
+## Quick Start
+
+### Installation
+
+Build svt from the source and install dependencies:
+
+1. **Clone the repository:**
+
+```sh
+git clone https://github.com/jwc20/svt
+```
+
+2. **Navigate to the project directory:**
+
+```sh
+cd svt
+```
+
+3. **Install:**
+
+**Using [go modules](https://golang.org/):**
+
+```sh
+go build -o svt cmd/ssh # build the binary
+./svt                   # run
+```
+
+### Usage
+
+Run the project with:
+
+**Using [go modules](https://golang.org/):**
+```sh
+# If the binary is built
+go build -o svt cmd/ssh 
+./svt
+
+# If the binary is not built
+go run ./cmd/ssh
+```
+
+After running the Wish server, you can connect to it using SSH:
+
+```sh
+ssh localhost -p 23234
+
+# or
+ssh player_name@localhost -p 23234
+```
+
+
+https://github.com/user-attachments/assets/ec4471b6-fd84-4718-ad35-6a4e1ba8b411
+
+
+### Testing
+
+Svt uses the {__test_framework__} test framework. Run the test suite with:
+
+**Using [go modules](https://golang.org/):**
+```sh
+go test ./...
+```
+
+When writing the game engine tests, I ran my [sniffy](https://github.com/jwc20/sniffy) tool to automatically run the tests whenever I made a change to the code.
+
+---
+
+## Dependencies
+
+- [Bubble Tea](https://github.com/charmbracelet/bubbletea) 
+- [Wish SSH](https://github.com/charmbracelet/wish)
+- [Lipgloss](https://github.com/charmbracelet/lipgloss)
+- [Bubbles](https://github.com/charmbracelet/bubbles) for tables and viewports
+- [joho/godotenv](https://github.com/joho/godotenv) for loading environment variables
+- [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) SQLite driver for Go
+- [stretchr/testify](https://github.com/stretchr/testify) for writing asserts
+
+---
+
+
 ## Project Structure
+
+This application uses the [Bubble Tea v2 framework](https://github.com/charmbracelet/bubbletea) for terminal user interfaces and the [lipgloss](https://github.com/charmbracelet/lipgloss) library for styling.
+
+It uses [Wish](https://github.com/charmbracelet/wish) to provide a secure SSH connection to the server.
+
+The core game logic and API client is in the `internal/engine`, `internal/rand`, and `internal/hackernews` directories.
 
 ```sh
 └── svt/
     ├── README.md
     ├── cmd
-    │   └── ssh
-    ├── demo.cast
-    ├── first.gif
+    │   └── ssh              # SSH Wish Server
     ├── go.mod
     ├── go.sum
     ├── internal
-    │   ├── engine
-    │   ├── rand
-    │   ├── store
-    │   └── ui
+    │   ├── engine           # Game Logic
+    │   ├── rand             # Random Number Generation API Client
+    │   ├── hackernews       # Hacker News API Client
+    │   ├── store            # SQLite Database
+    │   └── ui               # Bubble Tea Terminal User Interface
     └── notes
-        ├── game-design-doc.md
-        ├── journal
-        └── oregon_trail_detailed_model.mermaid        
 ```
 
 ### Project Index
@@ -290,66 +403,10 @@
 	</details>
 </details>
 
----
-
-## Getting Started
-
-### Prerequisites
-
-This project requires the following dependencies:
-
-- **Programming Language:** Go
-- **Package Manager:** Go modules
-
-### Installation
-
-Build svt from the source and install dependencies:
-
-1. **Clone the repository:**
-
-```sh
-git clone https://github.com/jwc20/svt
-```
-
-2. **Navigate to the project directory:**
-
-```sh
-cd svt
-```
-
-3. **Install:**
-
-**Using [go modules](https://golang.org/):**
-
-```sh
-go build -o svt cmd/ssh # build the binary
-./svt                   # run
-```
-
-### Usage
-
-Run the project with:
-
-**Using [go modules](https://golang.org/):**
-```sh
-# If the binary is built
-go build -o svt cmd/ssh 
-./svt
-
-# If the binary is not built
-go run ./cmd/ssh
-```
-
-### Testing
-
-Svt uses the {__test_framework__} test framework. Run the test suite with:
-
-**Using [go modules](https://golang.org/):**
-```sh
-go test ./...
-```
 
 ---
+
+
 
 
 <div align="right">
@@ -364,38 +421,3 @@ go test ./...
 
 ---
 
-
----
-
-
-## TODO
-
-## Quick Start
-
-## High-Level Project Overview
-
-## How to Run Tests
-
-## Examples
-
-## AI Uses
-
-## Dependencies
-
----
-
-## Design Notes
-
-### Game Loop & Balance
-
-### API Choices
-
-### Data Modeling 
-
-- ER Diagram
-
-### Error Handling
-
-### Tradeoffs
-
-### If I had more time

@@ -23,20 +23,20 @@ type LeaderboardModel struct {
 func NewLeaderboardModel(entries []engine.LeaderboardEntry, width, height int) LeaderboardModel {
 	columns := []table.Column{
 		{Title: "Rank", Width: 6},
-		{Title: "Key", Width: 7},
+		{Title: "Player", Width: 14},
 		{Title: "Score", Width: 8},
 		{Title: "Ended At", Width: 20},
 	}
 
 	rows := make([]table.Row, len(entries))
 	for i, e := range entries {
-		pk := e.PublicKey
-		if len(pk) > 5 {
-			pk = pk[len(pk)-5:]
+		name := e.Username
+		if name == "" {
+			name = "anonymous"
 		}
 		rows[i] = table.Row{
 			strconv.Itoa(e.Rank),
-			pk,
+			name,
 			strconv.Itoa(e.Score),
 			e.EndedAt.Format("2006-01-02 15:04:05"),
 		}
@@ -47,7 +47,7 @@ func NewLeaderboardModel(entries []engine.LeaderboardEntry, width, height int) L
 		table.WithRows(rows),
 		table.WithFocused(true),
 		table.WithHeight(7),
-		table.WithWidth(49),
+		table.WithWidth(56),
 	)
 
 	s := table.DefaultStyles()
