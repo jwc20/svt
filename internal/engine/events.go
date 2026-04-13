@@ -17,15 +17,41 @@ type Event struct {
 	Effect EventEffect
 }
 
+// Event IDs — stable integers for serialization. Never reorder, only append.
+const (
+	EventNone                = 0
+	EventDNSOutage           = 1
+	EventLeadEngineerQuits   = 2
+	EventLaptopStolen        = 3
+	EventDDoS                = 4
+	EventAWSBillSurprise     = 5
+	EventDatabaseCorruption  = 6
+	EventCompetitorLaunches  = 7
+	EventSecurityBreach      = 8
+	EventNpmBreaks           = 9
+	EventInternPushes        = 10
+	EventRentRaised          = 11
+	EventRansomware          = 12
+	EventTechBlogReview      = 13
+	EventHackerNewsViral     = 14
+	EventVCColdEmail         = 15
+	EventRichUncle           = 16
+	EventOpenSourceFix       = 17
+	EventPitchCompetition    = 18
+	EventInfluencerTweet     = 19
+)
+
 // GenerateEvent rolls a random event and applies it to the game state.
-// Returns the event description, or "" if nothing happens.
-func GenerateEvent(gs *GameState) string {
+// Returns the event description and the event ID (0 if nothing happens).
+func GenerateEvent(gs *GameState) (string, int) {
 	r := rand.GetRandomInt(101) - 1 // 0..100
 
 	var evt Event
+	var eventID int
 
 	switch {
 	case r <= 5:
+		eventID = EventDNSOutage
 		evt = Event{
 			Name: "DNS outage -- site unreachable for hours.",
 			Effect: EventEffect{
@@ -34,6 +60,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 10:
+		eventID = EventLeadEngineerQuits
 		evt = Event{
 			Name: "Lead engineer quits.",
 			Effect: EventEffect{
@@ -42,6 +69,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 14:
+		eventID = EventLaptopStolen
 		evt = Event{
 			Name: "Cofounder's laptop stolen at coffee shop.",
 			Effect: EventEffect{
@@ -50,6 +78,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 19:
+		eventID = EventDDoS
 		evt = Event{
 			Name: "DDoS attack!",
 			Effect: EventEffect{
@@ -58,6 +87,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 24:
+		eventID = EventAWSBillSurprise
 		evt = Event{
 			Name: "AWS bill surprise -- forgot to turn off test instances.",
 			Effect: EventEffect{
@@ -65,6 +95,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 28:
+		eventID = EventDatabaseCorruption
 		evt = Event{
 			Name: "Database corruption -- loss of user data.",
 			Effect: EventEffect{
@@ -73,6 +104,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 32:
+		eventID = EventCompetitorLaunches
 		evt = Event{
 			Name: "Competitor launches same feature. Users jump ship.",
 			Effect: EventEffect{
@@ -81,6 +113,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 35:
+		eventID = EventSecurityBreach
 		evt = Event{
 			Name: "Security breach -- passwords leaked.",
 			Effect: EventEffect{
@@ -90,6 +123,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 38:
+		eventID = EventNpmBreaks
 		evt = Event{
 			Name: "npm dependency breaks -- half the app crashes.",
 			Effect: EventEffect{
@@ -98,6 +132,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 41:
+		eventID = EventInternPushes
 		evt = Event{
 			Name: "Intern pushes to prod on Friday night.",
 			Effect: EventEffect{
@@ -106,6 +141,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 44:
+		eventID = EventRentRaised
 		evt = Event{
 			Name: "Office landlord raises rent.",
 			Effect: EventEffect{
@@ -113,7 +149,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 49:
-		// Ransomware on a dev machine
+		eventID = EventRansomware
 		if gs.TechDebt < 30 {
 			evt = Event{
 				Name: "Ransomware on a dev machine.",
@@ -130,6 +166,7 @@ func GenerateEvent(gs *GameState) string {
 			}
 		}
 	case r <= 54:
+		eventID = EventTechBlogReview
 		evt = Event{
 			Name: "Tech blog writes a positive review!",
 			Effect: EventEffect{
@@ -137,6 +174,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 58:
+		eventID = EventHackerNewsViral
 		evt = Event{
 			Name: "Post goes viral on Hacker News.",
 			Effect: EventEffect{
@@ -145,6 +183,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 62:
+		eventID = EventVCColdEmail
 		evt = Event{
 			Name: "VC cold-emails you after seeing your product.",
 			Effect: EventEffect{
@@ -152,6 +191,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 65:
+		eventID = EventRichUncle
 		evt = Event{
 			Name: "Rich uncle sends a check.",
 			Effect: EventEffect{
@@ -159,6 +199,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 68:
+		eventID = EventOpenSourceFix
 		evt = Event{
 			Name: "Open source contributor fixes 3 bugs for free.",
 			Effect: EventEffect{
@@ -167,6 +208,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 71:
+		eventID = EventPitchCompetition
 		evt = Event{
 			Name: "Win a startup pitch competition.",
 			Effect: EventEffect{
@@ -175,6 +217,7 @@ func GenerateEvent(gs *GameState) string {
 			},
 		}
 	case r <= 74:
+		eventID = EventInfluencerTweet
 		evt = Event{
 			Name: "Influencer tweets about your product.",
 			Effect: EventEffect{
@@ -183,7 +226,7 @@ func GenerateEvent(gs *GameState) string {
 		}
 	default:
 		// 75-100: Nothing happens
-		return ""
+		return "", EventNone
 	}
 
 	// Apply effects
@@ -205,7 +248,7 @@ func GenerateEvent(gs *GameState) string {
 		gs.BugCount = 0
 	}
 
-	return evt.Name
+	return evt.Name, eventID
 }
 
 // CheckIncident checks if an incident occurs and applies consequences.

@@ -37,9 +37,11 @@ var (
 )
 
 type GameModel struct {
-	state engine.GameState
-	phase engine.GamePhase
-	store engine.GameStore
+	state    engine.GameState
+	phase    engine.GamePhase
+	store    engine.GameStore
+	gameID   int64
+	playerID int64
 
 	promptTitle string
 	promptLines []string
@@ -55,9 +57,11 @@ type GameModel struct {
 	deathMessage string
 
 	deathRollCeiling int // current upper bound for player's next roll
+
+	pendingEntry engine.TurnEntry // accumulates action/death roll before finishTurn
 }
 
-func NewGameModel(store engine.GameStore, w, h int) GameModel {
+func NewGameModel(st engine.GameStore, playerID int64, w, h int) GameModel {
 	ti := textinput.New()
 	ti.Placeholder = "Enter choice..."
 	ti.CharLimit = 20
@@ -68,18 +72,31 @@ func NewGameModel(store engine.GameStore, w, h int) GameModel {
 	vp.SetWidth(maxInt(w/3-4, 14))
 	vp.SetHeight(maxInt(h-22, 4))
 
-	gs := engine.InitState()
-
 	m := GameModel{
-		state:    gs,
-		phase:    engine.PhaseServerChoice,
-		store:    store,
+		store:    st,
+		playerID: playerID,
 		input:    ti,
 		choiceVP: vp,
 		width:    w,
 		height:   h,
 	}
 
+	// Try to load an active (unfinished) game
+	gameID, gs, err := st.LoadActiveGame(playerID)
+	if err == nil && gs != nil {
+		m.state = *gs
+		m.gameID = gameID
+		m.phase = engine.PhaseTurnAction
+		m.addChoice("-- Resumed saved game --")
+		m.addChoice(fmt.Sprintf("Turn %d, $%d cash, %d hype", gs.TurnNumber, gs.Cash, gs.Hype))
+		m.addChoice("---")
+		m.setTurnPrompt()
+		return m
+	}
+
+	// New game
+	m.state = engine.InitState()
+	m.phase = engine.PhaseServerChoice
 	m.setServerPrompt()
 	return m
 }
@@ -175,6 +192,12 @@ func (m GameModel) handleDBChoice(val string) (GameModel, tea.Cmd) {
 	m.addChoice(fmt.Sprintf("Starting: $%d cash, %d hype, %d users", m.state.Cash, m.state.Hype, m.state.UserCount))
 	m.addChoice("---")
 
+	// Create game row now that infrastructure is chosen
+	gameID, err := m.store.NewGame(m.playerID, &m.state)
+	if err == nil {
+		m.gameID = gameID
+	}
+
 	return m.startTurn()
 }
 
@@ -187,12 +210,14 @@ func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 	m.state.ActionChoice = choice
 
 	if choice == 1 {
+		m.pendingEntry = engine.TurnEntry{Action: 1, DeathRoll: engine.DeathRollNone}
 		m.addChoice(">> Push forward")
 		miles := engine.AdvanceMileage(&m.state)
 		m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
 		return m.finishTurn()
 	}
 
+	m.pendingEntry = engine.TurnEntry{Action: 2}
 	m.addChoice(">> Fix bugs")
 	m.addChoice("  -- Death Roll --")
 
@@ -238,6 +263,7 @@ func (m GameModel) handleDeathRoll(val string) (GameModel, tea.Cmd) {
 }
 
 func (m GameModel) deathRollWin() (GameModel, tea.Cmd) {
+	m.pendingEntry.DeathRoll = engine.DeathRollWin
 	m.addChoice(GoodStyle.Render("  You won the death roll!"))
 
 	// apply bug fix + mileage only on win
@@ -250,6 +276,7 @@ func (m GameModel) deathRollWin() (GameModel, tea.Cmd) {
 }
 
 func (m GameModel) deathRollLose() (GameModel, tea.Cmd) {
+	m.pendingEntry.DeathRoll = engine.DeathRollLoss
 	m.addChoice(WarnStyle.Render("  You rolled 1! You lost the death roll."))
 
 	miles := engine.AdvanceMileage(&m.state)
@@ -259,7 +286,12 @@ func (m GameModel) deathRollLose() (GameModel, tea.Cmd) {
 }
 
 func (m GameModel) finishTurn() (GameModel, tea.Cmd) {
-	cashBurn, revenue, _, techDebtAdded, bugsAdded, eventMsg := engine.ApplyEndOfTurn(&m.state)
+	cashBurn, revenue, _, techDebtAdded, bugsAdded, eventMsg, eventID := engine.ApplyEndOfTurn(&m.state)
+
+	// Record the turn entry
+	m.pendingEntry.EventID = eventID
+	m.state.TurnHistory = append(m.state.TurnHistory, m.pendingEntry)
+	m.pendingEntry = engine.TurnEntry{}
 
 	m.addChoice(fmt.Sprintf("  Cash burn: -$%d | Revenue: +$%d | Net: $%d", cashBurn, revenue, m.state.Cash))
 	m.addChoice(fmt.Sprintf("  Tech debt: +%d (total: %d) | New bugs: +%d (total: %d)", techDebtAdded, m.state.TechDebt, bugsAdded, m.state.BugCount))
@@ -275,6 +307,9 @@ func (m GameModel) finishTurn() (GameModel, tea.Cmd) {
 	}
 
 	m.addChoice("---")
+
+	// Save state after each turn
+	_ = m.store.SaveGame(m.playerID, m.gameID, &m.state)
 
 	if reason, lost := engine.CheckLoseCondition(&m.state); lost {
 		m.addChoice(BadStyle.Render(reason))
@@ -364,6 +399,9 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 
 	switch result {
 	case "won":
+		score := engine.CalcScore(&m.state)
+		_ = m.store.FinishGame(m.gameID, &score)
+
 		m.promptTitle = "CONGRATULATIONS!"
 		m.promptLines = []string{
 			"", GoodStyle.Render("YOUR STARTUP MADE IT TO SAN FRANCISCO!"), "",
@@ -372,9 +410,13 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 			fmt.Sprintf("Final hype: %d", m.state.Hype),
 			fmt.Sprintf("Final users: %d", m.state.UserCount),
 			fmt.Sprintf("Tech health: %d", engine.TechHealth(&m.state)),
+			"",
+			FocusLabel.Render(fmt.Sprintf("SCORE: %d", score)),
 			"", DimStyle.Render("Press esc to return to lobby."),
 		}
 	default:
+		_ = m.store.FinishGame(m.gameID, nil)
+
 		m.promptTitle = "GAME OVER"
 		m.promptLines = []string{
 			"", BadStyle.Render(deathMsg), "",

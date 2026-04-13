@@ -13,3 +13,4 @@ go.work.sum
 .env
 .idea/
 .ssh
+svt.db*

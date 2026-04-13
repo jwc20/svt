@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -15,8 +16,9 @@ import (
 	"charm.land/wish/v2/bubbletea"
 	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
+	gossh "golang.org/x/crypto/ssh"
 
-	"github.com/jwc20/svt/internal/engine"
+	"github.com/jwc20/svt/internal/store"
 	"github.com/jwc20/svt/internal/ui"
 )
 
@@ -25,18 +27,22 @@ const (
 	port = "23234"
 )
 
-type SimpleStore struct{}
-
-func (s *SimpleStore) SaveState(state engine.GameState) error { return nil }
-func (s *SimpleStore) LoadState() (engine.GameState, error)   { return engine.GameState{}, nil }
-
 func main() {
+	db, err := store.NewSQLiteStore("svt.db")
+	if err != nil {
+		log.Fatal("Could not open database", "error", err)
+	}
+	defer db.Close()
+
 	s, err := wish.NewServer(
 		ssh.AllocatePty(),
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
+		//wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
+		//	return key.Type() == "ssh-ed25519"
+		//}),
 		wish.WithMiddleware(
-			SvtBubbleteaMiddleware(),
+			SvtBubbleteaMiddleware(db),
 			logging.Middleware(),
 		),
 	)
@@ -63,9 +69,7 @@ func main() {
 	}
 }
 
-func SvtBubbleteaMiddleware() wish.Middleware {
-	store := &SimpleStore{}
-
+func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 	teaHandler := func(s ssh.Session) *tea.Program {
 		pty, _, active := s.Pty()
 		if !active {
@@ -73,9 +77,29 @@ func SvtBubbleteaMiddleware() wish.Middleware {
 			return nil
 		}
 
-		playerId := s.User()
+		key := s.PublicKey()
+		if key == nil {
+			//wish.Fatalln(s, "public key required")
+			//return nil
+			
+			// https://github.com/charmbracelet/ssh/blob/ebfa259c73091350caed965eb59c2bb8cd90e7e1/_examples/ssh-publickey/public_key.go#L14
+			parsed, _, _, _, _ := ssh.ParseAuthorizedKey(
+				[]byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxWe2rXKoiO6W14LYPVfJKzRfJ1f3Jhzxrgjc/D4tU7"),
+			)
+			key = parsed
+		}
 
-		m := ui.NewRootModel(store, playerId)
+		// Marshal the public key to authorized_keys format (e.g. "ssh-ed25519 AAAA...")
+		pubKeyStr := strings.TrimSpace(string(gossh.MarshalAuthorizedKey(key)))
+
+		playerID, err := db.CreatePlayer(pubKeyStr)
+		if err != nil {
+			wish.Fatalf(s, "could not create player: %v", err)
+			return nil
+		}
+
+		userName := s.User()
+		m := ui.NewRootModel(db, playerID, userName)
 		opts := bubbletea.MakeOptions(s)
 
 		p := tea.NewProgram(m, opts...)

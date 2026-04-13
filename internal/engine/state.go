@@ -61,6 +61,20 @@ var DBSpecs = map[DBOption]DBSpec{
 	DBSQLite: {Name: "SQLite", MonthlyCost: 0, PerUserCost: 0, DebtPerTurn: 3, BugCeiling: 2, IsAWS: false},
 }
 
+type DeathRollOutcome int
+
+const (
+	DeathRollNone DeathRollOutcome = iota // action was push forward
+	DeathRollWin
+	DeathRollLoss
+)
+
+type TurnEntry struct {
+	Action    int              // 1 = push forward, 2 = fix bugs
+	DeathRoll DeathRollOutcome // only meaningful when Action == 2
+	EventID   int              // 0 = no event, 1-19 = specific event
+}
+
 type GameState struct {
 	Cash      int
 	Hype      int
@@ -74,6 +88,8 @@ type GameState struct {
 
 	TurnNumber   int
 	ActionChoice int // 1 = push forward, 2 = fix bugs
+
+	TurnHistory []TurnEntry
 }
 
 func InitState() GameState {
