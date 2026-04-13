@@ -92,8 +92,8 @@ type GameState struct {
 	TurnHistory []TurnEntry
 }
 
-func InitState() GameState {
-	hype := InitialHypeBase + rand.GetRandomInt(50)
+func InitState(bonusHype int) GameState {
+	hype := InitialHypeBase + rand.GetRandomInt(50) + bonusHype
 	return GameState{
 		Cash:     InitialCash,
 		Hype:     hype,

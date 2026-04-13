@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/ssh"
 	gossh "golang.org/x/crypto/ssh"
 
+	"github.com/jwc20/svt/internal/hackernews"
 	"github.com/jwc20/svt/internal/store"
 	"github.com/jwc20/svt/internal/ui"
 )
@@ -100,7 +101,13 @@ func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 			return nil
 		}
 
-		m := ui.NewRootModel(db, playerID, userName)
+		bonusHype, err := db.GetBonusHype(playerID)
+		if err != nil || bonusHype < 0 {
+			bonusHype = hackernews.FetchBonusHype(userName)
+			_ = db.SetBonusHype(playerID, bonusHype)
+		}
+
+		m := ui.NewRootModel(db, playerID, userName, bonusHype)
 		opts := bubbletea.MakeOptions(s)
 
 		p := tea.NewProgram(m, opts...)

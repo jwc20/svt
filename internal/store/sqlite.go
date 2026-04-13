@@ -71,6 +71,13 @@ func (s *SQLiteStore) migrate() error {
 		}
 	}
 
+	_, err = s.db.Exec(`ALTER TABLE players ADD COLUMN bonus_hype INTEGER`)
+	if err != nil {
+		if !strings.Contains(err.Error(), "duplicate column") {
+			return err
+		}
+	}
+
 	// Backfill: mark games that have a score as ended.
 	_, err = s.db.Exec(`UPDATE games SET ended = TRUE WHERE score IS NOT NULL AND ended = FALSE`)
 	return err
@@ -101,6 +108,23 @@ func (s *SQLiteStore) CreatePlayer(publicKey string, username string) (int64, er
 	// Row already existed — update the username and look up the ID
 	_, _ = s.db.Exec(`UPDATE players SET username = ? WHERE public_key = ?`, username, publicKey)
 	return s.GetPlayerByKey(publicKey)
+}
+
+func (s *SQLiteStore) GetBonusHype(playerID int64) (int, error) {
+	var bonus sql.NullInt64
+	err := s.db.QueryRow(`SELECT bonus_hype FROM players WHERE id = ?`, playerID).Scan(&bonus)
+	if err != nil {
+		return 0, err
+	}
+	if !bonus.Valid {
+		return -1, nil // NULL means not yet computed
+	}
+	return int(bonus.Int64), nil
+}
+
+func (s *SQLiteStore) SetBonusHype(playerID int64, bonus int) error {
+	_, err := s.db.Exec(`UPDATE players SET bonus_hype = ? WHERE id = ?`, bonus, playerID)
+	return err
 }
 
 func (s *SQLiteStore) GetPlayerByKey(publicKey string) (int64, error) {

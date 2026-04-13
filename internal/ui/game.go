@@ -63,7 +63,7 @@ type GameModel struct {
 	confirmLeave bool
 }
 
-func NewGameModel(st engine.GameStore, playerID int64, w, h int) GameModel {
+func NewGameModel(st engine.GameStore, playerID int64, bonusHype int, w, h int) GameModel {
 	ti := textinput.New()
 	ti.Placeholder = "Enter choice..."
 	ti.CharLimit = 20
@@ -97,7 +97,7 @@ func NewGameModel(st engine.GameStore, playerID int64, w, h int) GameModel {
 	}
 
 	// New game
-	m.state = engine.InitState()
+	m.state = engine.InitState(bonusHype)
 	m.phase = engine.PhaseServerChoice
 	m.setServerPrompt()
 	return m

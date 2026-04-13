@@ -12,6 +12,8 @@ type LeaderboardEntry struct {
 type GameStore interface {
 	CreatePlayer(publicKey string, username string) (playerID int64, err error)
 	GetPlayerByKey(publicKey string) (playerID int64, err error)
+	GetBonusHype(playerID int64) (int, error)
+	SetBonusHype(playerID int64, bonus int) error
 	SaveGame(playerID int64, gameID int64, state *GameState) error
 	NewGame(playerID int64, state *GameState) (gameID int64, err error)
 	LoadActiveGame(playerID int64) (gameID int64, state *GameState, err error)

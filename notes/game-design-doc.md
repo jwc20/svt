@@ -1,84 +1,144 @@
-# Game Design
-
-
-**Starting State:**
-- Cash: 1500
-- Hype: 50 + rand(0..50)
-- TechDebt: 0
-- BugCount: 0
-- TotalMiles: 0
-- UserCount: hype * 10
-
-**Win Condition:** Reach 2040 totalMiles (San Francisco)
-
-**Lose Conditions:**
-- Cash < 0 → bankrupt
-- Hype < 5 → ghost town
-- TechHealth < 0 → total system failure
+# Game Design Doc
 
 ---
 
-**Server Options:**
+## Starting State
 
-| Option | Monthly Cost | Per User Cost | Tech Debt/turn | Bug/turn |
-|---|---|---|---|---|
-| AWS Fargate | 0 | 0.05 | +0 | +0 |
-| AWS EC2 | 40 | 0 | +1 | rand(0..1) |
-| AWS Lambda | 0 | 0.03 | +2 | rand(0..2) |
-| Lenovo ThinkPad | 0 | 0 | +4 | rand(0..3) |
-
-**Database Options:**
-
-| Option | Monthly Cost | Per User Cost | Tech Debt/turn | Bug/turn |
-|---|---|---|---|---|
-| AWS Aurora | 0 | 0.04 | +0 | +0 |
-| AWS RDS | 30 | 0 | +1 | rand(0..1) |
-| SQLite | 0 | 0 | +3 | rand(0..2) |
-
-**API Gateway:** $129/month — applies if any AWS service (server or database) is selected. Does not apply if both choices are non-AWS (ThinkPad + SQLite).
+- Cash: `1500`
+- Hype: `50 + rand(0..50) + bonusHype`
+- TechDebt: `0`
+- BugCount: `0`
+- TotalMiles: `0`
+- UserCount: `hype * 10`
 
 ---
 
-**Per-Turn Formulas:**
+## Hacker News Bonus (pre-game, from player's HN username)
 
-**Mileage:**
-`miles += 140 + hype/5 + rand(-20..20)`
+**Flow:**
+1. Player SSHs in → `CreatePlayer(publicKey, username)` runs
+2. If `bonus_hype` is NULL (first time), call `FetchBonusHype(username)`, write it to the player's row
+3. If `bonus_hype` already has a value, skip the API call
+4. Pass the stored `bonus_hype` value through to `InitState` instead of the username
+
+**API calls (only on first login):**
+- `https://hn.algolia.com/api/v1/users/{username}` → karma
+- `https://hn.algolia.com/api/v1/search?query={username}&tags=front_page` → nbHits
+
+`bonusHype = min(floor(log10(karma + 1)) * 5 + nbHits * 2, 30)`
+
+**Examples:**
+- karma 100, 0 front page hits → bonusHype = 10
+- karma 1000, 1 front page hit → bonusHype = 17
+- karma 150000, 1 front page hit → bonusHype = 27
+
+Capped at 30 to prevent breaking early game. If username not found, `bonusHype = 0`.
+
+---
+
+## Win Condition
+
+Reach `2040` totalMiles (San Francisco)
+
+## Lose Conditions
+
+- `cash < 0` → bankrupt
+- `hype < 5` → ghost town
+- `techHealth < 0` → total system failure
+
+---
+
+## Server Options
+
+| Option | Monthly Cost | Per User Cost | Tech Debt/turn | Bug/turn |
+|---|---|---|---|---|
+| AWS Fargate | `0` | `0.05` | `+0` | `+0` |
+| AWS EC2 | `40` | `0` | `+1` | `rand(0..1)` |
+| AWS Lambda | `0` | `0.03` | `+2` | `rand(0..2)` |
+| Lenovo ThinkPad | `0` | `0` | `+4` | `rand(0..3)` |
+
+## Database Options
+
+| Option | Monthly Cost | Per User Cost | Tech Debt/turn | Bug/turn |
+|---|---|---|---|---|
+| AWS Aurora | `0` | `0.04` | `+0` | `+0` |
+| AWS RDS | `30` | `0` | `+1` | `rand(0..1)` |
+| SQLite | `0` | `0` | `+3` | `rand(0..2)` |
+
+## API Gateway
+
+`$129/month` — applies if any AWS service (server or database) is selected. Does not apply if both choices are non-AWS (ThinkPad + SQLite).
+
+---
+
+## Actions (pick one per turn)
+
+### 1. Push forward — advance miles normally
+
+- `miles += 140 + hype/5 + rand(-20..20)`
+- Tech debt accumulates normally
+
+### 2. Fix bugs — sacrifice progress for stability
+
+- `miles += (140 + hype/5 + rand(-20..20)) / 2`
+- `bugCount -= rand(2..5)`
+- `techDebt -= rand(1..3)`
+
+### 3. Marketing push — sacrifice progress for growth
+
+- `miles += (140 + hype/5 + rand(-20..20)) / 2`
+- `cost = 50 + floor(hype * 0.5)`
+- `hype += 15 + rand(0..10)`
+- If `cash < cost`, action is unavailable
+
+---
+
+## End-of-Turn Formulas (always applied)
 
 **Monthly Cash Burn:**
+
 `cashUsed = server.monthlyCost + db.monthlyCost + (server.perUser + db.perUser) * userCount + apiGatewayCost`
 
 Where `apiGatewayCost = 129` if either server or database is an AWS service, otherwise `0`.
 
 **Monthly Revenue:**
+
 `revenue = hype * 1.5 + rand(0..hype) + randomEvent`
 
 **Hype Decay:**
+
 `hype = hype - 3 - bugCount/2 + rand(-5..5)`
 
 **Tech Debt:**
+
 `techDebt += totalMiles/200 + server.debtMod + db.debtMod + rand(0..3)`
 
 **Tech Health (derived):**
+
 `techHealth = 100 - techDebt - bugCount * 3`
 
 **Bug Generation:**
+
 `newBugs = floor(totalMiles/400) + server.bugMod + db.bugMod`
 
 **User Count:**
+
 `userCount = hype * 10`
 
 **Net Cash:**
+
 `cash = cash - cashUsed + revenue`
 
 ---
 
-**Incident System:**
+## Incident System
+
 - Check: `survived = techHealth > 10 + rand(0..5)`
 - Fail: `hype -= rand(10..30)`, `bugCount += rand(1..3)`
 
 ---
 
-**Random Events (roll rand(0..100) each turn):**
+## Random Events (roll `rand(0..100)` each turn)
 
 | Roll | Event | Effect |
 |---|---|---|
@@ -93,7 +153,7 @@ Where `apiGatewayCost = 129` if either server or database is an AWS service, oth
 | 36-38 | npm dependency breaks — half the app crashes. | `bugCount += 5 + rand(0..3)` `techDebt += rand(2..5)` |
 | 39-41 | Intern pushes to prod on Friday night. | `bugCount += rand(3..6)` `hype -= rand(5..10)` |
 | 42-44 | Office landlord raises rent. | `cash -= 75 + rand(0..50)` |
-| 45-49 | Ransomware on a dev machine. | `if (techDebt < 30) { cash -= 250 + rand(0..150) } else { techDebt += rand(2..4) }` |
+| 45-49 | Ransomware on a dev machine. | If `techHealth < 30`: `cash -= 250 + rand(0..150)`. Otherwise: `techDebt += rand(2..4)` |
 | 50-54 | Tech blog writes a positive review! | `hype += 10 + rand(0..10)` |
 | 55-58 | Post goes viral on Hacker News. | `hype += 15 + rand(0..15)` `miles += rand(5..15)` |
 | 59-62 | VC cold-emails you after seeing your product. | `cash += 250 + rand(0..250)` |
@@ -105,7 +165,7 @@ Where `apiGatewayCost = 129` if either server or database is an AWS service, oth
 
 ---
 
-**Negative Events:**
+### Negative Events
 
 | Event | Effect |
 |---|---|
@@ -120,7 +180,7 @@ Where `apiGatewayCost = 129` if either server or database is an AWS service, oth
 | npm dependency breaks — half the app crashes. | `bugCount += 5 + rand(0..3)` `techDebt += rand(2..5)` |
 | Intern pushes to prod on Friday night. | `bugCount += rand(3..6)` `hype -= rand(5..10)` |
 | Office landlord raises rent. | `cash -= 75 + rand(0..50)` |
-| Ransomware on a dev machine. | If `techDebt < 30`: `cash -= 250 + rand(0..150)`. Otherwise: `techDebt += rand(2..4)` |
+| Ransomware on a dev machine. | If `techHealth < 30`: `cash -= 250 + rand(0..150)`. Otherwise: `techDebt += rand(2..4)` |
 | SSL certificate expires — site shows security warning. | `hype -= rand(5..15)` `bugCount += 1` |
 | Key API you depend on deprecates without warning. | `techDebt += rand(5..10)` `miles -= rand(10..20)` |
 | Cofounder disagrees on direction — morale tanks. | `hype -= rand(10..20)` |
@@ -128,7 +188,7 @@ Where `apiGatewayCost = 129` if either server or database is an AWS service, oth
 | Customer data GDPR complaint. | `cash -= 100 + rand(0..100)` `hype -= rand(5..10)` |
 | GitHub repo accidentally made public — code leaked. | `hype -= rand(5..15)` `techDebt += rand(2..4)` |
 
-**Positive Events:**
+### Positive Events
 
 | Event | Effect |
 |---|---|
@@ -146,49 +206,31 @@ Where `apiGatewayCost = 129` if either server or database is an AWS service, oth
 | User writes a glowing Twitter thread about your product. | `hype += rand(5..15)` |
 | Lucky break — find a free coworking space for 3 months. | `cash += 50` |
 
+---
+
+## Score (on win)
+
+`score = cash + (hype * 10) + (techHealth * 5) - (totalTurns * 20) + serverBonus + dbBonus`
+
+### Server Score Bonus
+
+| Option | Bonus |
+|---|---|
+| Lenovo ThinkPad | `+200` |
+| AWS Lambda | `+100` |
+| AWS EC2 | `+50` |
+| AWS Fargate | `+0` |
+
+### Database Score Bonus
+
+| Option | Bonus |
+|---|---|
+| SQLite | `+150` |
+| AWS RDS | `+75` |
+| AWS Aurora | `+0` |
 
 ---
 
-**Route (12 Turns):**
+## Route (12 Turns)
+
 1. San Jose → 2. Santa Clara → 3. Sunnyvale → 4. Mountain View → 5. Palo Alto → 6. Menlo Park → 7. Redwood City → 8. San Mateo → 9. Hillsborough → 10. San Bruno → 11. Daly City → 12. San Francisco
-
----
-
-**Actions (pick one per turn):**
-
-1. Push forward — advance miles normally, tech debt accumulates normally
-2. Fix bugs — miles halved, bugCount -= rand(2..5), techDebt -= rand(1..3)
-   - fixing bug completely is determined if winning in a [death roll](https://eu.forums.blizzard.com/en/wow/t/deathrolling/112260/7)
-
-   ![img.png](img.png)
-   
-**End of turn (always happens):**
-
-1. Cash burn deducted
-2. Revenue collected
-3. Hype decay applied
-4. Random event rolled
-
----
-
-## End Game Scoring
-
-**Score = cash + (hype * 10) + (techHealth * 5) - (totalTurns * 20) + serverBonus + dbBonus**
-
-**Server Score Bonus:**
-
-| Option | Bonus |
-|---|---|
-| Lenovo ThinkPad | +200 |
-| AWS Lambda | +100 |
-| AWS EC2 | +50 |
-| AWS Fargate | +0 |
-
-**Database Score Bonus:**
-
-| Option | Bonus |
-|---|---|
-| SQLite | +150 |
-| AWS RDS | +75 |
-| AWS Aurora | +0 |
-
