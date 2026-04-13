@@ -55,7 +55,8 @@
 - [Table of Contents](#table-of-contents)
 - [Quick Start](#quick-start)
   - [Installation](#installation)
-  - [Usage](#usage)
+  - [Running the Server](#running-the-server)
+  - [Connecting via SSH](#connecting-via-ssh)
   - [Testing](#testing)
 - [Dependencies](#dependencies)
 - [Project Structure](#project-structure)
@@ -67,7 +68,7 @@
 
 ### Installation
 
-Build svt from the source and install dependencies:
+Clone the repository and set up the project:
 
 1. **Clone the repository:**
 
@@ -81,42 +82,44 @@ git clone https://github.com/jwc20/svt
 cd svt
 ```
 
-3. **Install:**
+3. **Build the application:**
 
-**Using [go modules](https://golang.org/):**
+Using [Go modules](https://go.dev/blog/using-go-modules):
 
 ```sh
-go build -o svt cmd/ssh # build the binary
-./svt                   # run
+go build -o svt cmd/ssh
 ```
 
-### Usage
+### Running the Server
 
-Run the project with:
+**Option 1: Run the built binary**
 
 ```sh
-# If the binary is built
-go build -o svt cmd/ssh 
 ./svt
+```
 
-# If the binary is not built
+**Option 2: Run directly without building**
+
+```sh
 go run ./cmd/ssh
 ```
 
-After running the Wish server, you can connect to it using SSH:
+### Connecting via SSH
+
+After starting the server, connect to it using SSH:
 
 ```sh
 ssh localhost -p 23234
 
-# or
+# or with a username
 ssh player_name@localhost -p 23234
 ```
 
-
 https://github.com/user-attachments/assets/ec4471b6-fd84-4718-ad35-6a4e1ba8b411
 
-
 ### Testing
+
+Run the test suite with:
 
 ```sh
 go test ./...
@@ -126,24 +129,26 @@ go test ./...
 
 ## Dependencies
 
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea) 
-- [Wish SSH](https://github.com/charmbracelet/wish)
-- [Lipgloss](https://github.com/charmbracelet/lipgloss)
-- [Bubbles](https://github.com/charmbracelet/bubbles) for tables and viewports
-- [joho/godotenv](https://github.com/joho/godotenv) for loading environment variables
-- [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) SQLite driver for Go
-- [stretchr/testify](https://github.com/stretchr/testify) for writing asserts
+- [Bubble Tea](https://github.com/charmbracelet/bubbletea) — Terminal user interface framework
+- [Wish SSH](https://github.com/charmbracelet/wish) — Secure SSH server
+- [Lipgloss](https://github.com/charmbracelet/lipgloss) — Terminal styling
+- [Bubbles](https://github.com/charmbracelet/bubbles) — UI components (tables, viewports)
+- [joho/godotenv](https://github.com/joho/godotenv) — Environment variable loading
+- [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) — SQLite driver
+- [stretchr/testify](https://github.com/stretchr/testify) — Testing assertions
 
 ---
 
 
 ## Project Structure
 
-This application uses the [Bubble Tea v2 framework](https://github.com/charmbracelet/bubbletea) for terminal user interfaces and the [lipgloss](https://github.com/charmbracelet/lipgloss) library for styling.
+The application uses:
 
-It uses [Wish](https://github.com/charmbracelet/wish) to provide a secure SSH connection to the server.
+- **[Bubble Tea v2 framework](https://github.com/charmbracelet/bubbletea)** for terminal user interfaces
+- **[Lipgloss](https://github.com/charmbracelet/lipgloss)** for styling
+- **[Wish](https://github.com/charmbracelet/wish)** for secure SSH connections
 
-The core game logic and API client is in the `internal/engine`, `internal/rand`, and `internal/hackernews` directories.
+The core game logic and API clients are located in the `internal/` directory:
 
 ```sh
 └── svt/
@@ -170,4 +175,3 @@ The core game logic and API client is in the `internal/engine`, `internal/rand`,
 </div>
 
 [back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
-
