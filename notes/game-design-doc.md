@@ -234,3 +234,9 @@ Where `apiGatewayCost = 129` if either server or database is an AWS service, oth
 ## Route (12 Turns)
 
 1. San Jose → 2. Santa Clara → 3. Sunnyvale → 4. Mountain View → 5. Palo Alto → 6. Menlo Park → 7. Redwood City → 8. San Mateo → 9. Hillsborough → 10. San Bruno → 11. Daly City → 12. San Francisco
+
+---
+
+## Data Modeling
+
+![erd.png](notes/journal/img/erd.png)
