@@ -37,12 +37,14 @@
 
 - See [game-design-doc.md](notes/game-design-doc.md)
 
+## AI Uses
+
+- See [ai_uses](notes/ai-uses.md)
+
 ### API Choices
 
 - [random.org](https://www.random.org/)
 - [HackerNews Algolia](https://hn.algolia.com)
-
-<br>
 
 <br>
 
@@ -60,6 +62,8 @@
   - [Testing](#testing)
 - [Project Structure](#project-structure)
   - [Project Index](#project-index)
+
+<br>
 
 <br>
 
@@ -132,16 +136,12 @@ When writing the game engine tests, I ran my [sniffy](https://github.com/jwc20/s
 
 ---
 
-## AI Uses
-
-- See [ai_uses](notes/ai-uses.md)
-
 ## Dependencies
 
-- [Bubble Tea v2](https://charm.land/bubbletea) 
-- [Wish SSH v2](https://charm.land/wish)
-- [Lipgloss v2](https://charm.land/lipgloss)
-- [Bubbles v2](https://charm.land/bubbles) for tables and viewports
+- [Bubble Tea](https://github.com/charmbracelet/bubbletea) 
+- [Wish SSH](https://github.com/charmbracelet/wish)
+- [Lipgloss](https://github.com/charmbracelet/lipgloss)
+- [Bubbles](https://github.com/charmbracelet/bubbles) for tables and viewports
 - [joho/godotenv](https://github.com/joho/godotenv) for loading environment variables
 - [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) SQLite driver for Go
 - [stretchr/testify](https://github.com/stretchr/testify) for writing asserts
