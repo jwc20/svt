@@ -37,6 +37,7 @@ func (s *SQLiteStore) migrate() error {
 		CREATE TABLE IF NOT EXISTS players (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			public_key TEXT NOT NULL UNIQUE,
+			username TEXT NOT NULL DEFAULT '',
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
 		CREATE TABLE IF NOT EXISTS games (
@@ -63,6 +64,13 @@ func (s *SQLiteStore) migrate() error {
 		}
 	}
 
+	_, err = s.db.Exec(`ALTER TABLE players ADD COLUMN username TEXT NOT NULL DEFAULT ''`)
+	if err != nil {
+		if !strings.Contains(err.Error(), "duplicate column") {
+			return err
+		}
+	}
+
 	// Backfill: mark games that have a score as ended.
 	_, err = s.db.Exec(`UPDATE games SET ended = TRUE WHERE score IS NOT NULL AND ended = FALSE`)
 	return err
@@ -72,10 +80,10 @@ func (s *SQLiteStore) Close() error {
 	return s.db.Close()
 }
 
-func (s *SQLiteStore) CreatePlayer(publicKey string) (int64, error) {
+func (s *SQLiteStore) CreatePlayer(publicKey string, username string) (int64, error) {
 	result, err := s.db.Exec(
-		`INSERT OR IGNORE INTO players (public_key) VALUES (?)`,
-		publicKey,
+		`INSERT OR IGNORE INTO players (public_key, username) VALUES (?, ?)`,
+		publicKey, username,
 	)
 	if err != nil {
 		return 0, err
@@ -90,7 +98,8 @@ func (s *SQLiteStore) CreatePlayer(publicKey string) (int64, error) {
 		return id, nil
 	}
 
-	// Row already existed, look up the ID
+	// Row already existed — update the username and look up the ID
+	_, _ = s.db.Exec(`UPDATE players SET username = ? WHERE public_key = ?`, username, publicKey)
 	return s.GetPlayerByKey(publicKey)
 }
 
@@ -159,7 +168,7 @@ func (s *SQLiteStore) FinishGame(gameID int64, score *int) error {
 
 func (s *SQLiteStore) Leaderboard(limit int) ([]engine.LeaderboardEntry, error) {
 	rows, err := s.db.Query(`
-		SELECT p.public_key, g.score, g.updated_at
+		SELECT p.username, g.score, g.updated_at
 		FROM games g
 		JOIN players p ON p.id = g.player_id
 		WHERE g.ended = TRUE AND g.score IS NOT NULL
@@ -175,7 +184,7 @@ func (s *SQLiteStore) Leaderboard(limit int) ([]engine.LeaderboardEntry, error) 
 	rank := 1
 	for rows.Next() {
 		var e engine.LeaderboardEntry
-		if err := rows.Scan(&e.PublicKey, &e.Score, &e.EndedAt); err != nil {
+		if err := rows.Scan(&e.Username, &e.Score, &e.EndedAt); err != nil {
 			return nil, err
 		}
 		e.Rank = rank

@@ -15,7 +15,7 @@ func NewStubGameStore() *StubGameStore {
 	return &StubGameStore{Games: make(map[int64]*GameState), NextID: 1}
 }
 
-func (s *StubGameStore) CreatePlayer(publicKey string) (int64, error) {
+func (s *StubGameStore) CreatePlayer(publicKey string, username string) (int64, error) {
 	return 1, nil
 }
 

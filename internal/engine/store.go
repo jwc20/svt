@@ -3,14 +3,14 @@ package engine
 import "time"
 
 type LeaderboardEntry struct {
-	Rank      int
-	PublicKey string
-	Score     int
-	EndedAt   time.Time
+	Rank     int
+	Username string
+	Score    int
+	EndedAt  time.Time
 }
 
 type GameStore interface {
-	CreatePlayer(publicKey string) (playerID int64, err error)
+	CreatePlayer(publicKey string, username string) (playerID int64, err error)
 	GetPlayerByKey(publicKey string) (playerID int64, err error)
 	SaveGame(playerID int64, gameID int64, state *GameState) error
 	NewGame(playerID int64, state *GameState) (gameID int64, err error)

@@ -92,13 +92,14 @@ func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 		// Marshal the public key to authorized_keys format (e.g. "ssh-ed25519 AAAA...")
 		pubKeyStr := strings.TrimSpace(string(gossh.MarshalAuthorizedKey(key)))
 
-		playerID, err := db.CreatePlayer(pubKeyStr)
+		userName := s.User()
+
+		playerID, err := db.CreatePlayer(pubKeyStr, userName)
 		if err != nil {
 			wish.Fatalf(s, "could not create player: %v", err)
 			return nil
 		}
 
-		userName := s.User()
 		m := ui.NewRootModel(db, playerID, userName)
 		opts := bubbletea.MakeOptions(s)
 
