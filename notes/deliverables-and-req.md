@@ -89,6 +89,8 @@
     - [x] Game loop & balance approach
     - [x] Why you chose your API(s) and how they affect gameplay
     - [ ] Data modeling (state, events, persistence)
-    - [ ] Error handling (network failures, rate limits)
+    - [x] Error handling (network failures, rate limits)
+      - Error handling for API calls is handled (`if err != nil { ... }`)
+      - No error handling for ssh Wish server failures.
     - [ ] Tradeoffs and "if I had more time"
-- [ ] **Tests** (unit or integration) for core mechanics
+- [x] **Tests** (unit or integration) for core mechanics
