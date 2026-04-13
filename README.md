@@ -116,6 +116,9 @@ ssh player_name@localhost -p 23234
 ```
 
 
+https://github.com/user-attachments/assets/ec4471b6-fd84-4718-ad35-6a4e1ba8b411
+
+
 ### Testing
 
 Svt uses the {__test_framework__} test framework. Run the test suite with:
