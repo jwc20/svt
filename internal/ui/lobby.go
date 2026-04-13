@@ -17,7 +17,7 @@ type LobbyModel struct {
 
 func NewLobbyModel(playerId string) LobbyModel {
 	return LobbyModel{
-		choices:  []string{"Play", "Leaderboard (TODO)"},
+		choices:  []string{"Play", "Leaderboard"},
 		playerId: playerId,
 	}
 }
@@ -40,6 +40,9 @@ func (m LobbyModel) Update(msg tea.Msg) (LobbyModel, tea.Cmd) {
 			if m.cursor == 0 {
 				return m, func() tea.Msg { return StartGameMsg{} }
 			}
+			if m.cursor == 1 {
+				return m, func() tea.Msg { return ShowLeaderboardMsg{} }
+			}
 		}
 	}
 	return m, nil
@@ -47,7 +50,7 @@ func (m LobbyModel) Update(msg tea.Msg) (LobbyModel, tea.Cmd) {
 
 func (m LobbyModel) View() tea.View {
 	var sb strings.Builder
-	sb.WriteString(TitleStyle.Render("   THE SILICON TRAIL") + "\n\n")
+	sb.WriteString(TitleStyle.Render(" THE SILICON TRAIL") + "\n\n")
 	sb.WriteString(DimStyle.Render(fmt.Sprintf("Welcome, %s", m.playerId)) + "\n\n")
 	for i, choice := range m.choices {
 		cursor := "  "
