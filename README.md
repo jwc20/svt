@@ -11,12 +11,7 @@
 
 <!-- BADGES -->
 
-[//]: # (<img src="https://img.shields.io/github/license/jwc20/svt?style=default&logo=opensourceinitiative&logoColor=white&color=0080ff" alt="license">)
 <img src="https://img.shields.io/github/last-commit/jwc20/svt?style=default&logo=git&logoColor=white&color=0080ff" alt="last-commit">
-
-[//]: # (<img src="https://img.shields.io/github/languages/top/jwc20/svt?style=default&color=0080ff" alt="repo-top-language">)
-
-[//]: # (<img src="https://img.shields.io/github/languages/count/jwc20/svt?style=default&color=0080ff" alt="repo-language-count">)
 
 
 </div>
@@ -39,7 +34,7 @@
 
 ## AI Uses
 
-- See [ai_uses](notes/ai-uses.md)
+- See [ai-uses.md](notes/ai-uses.md)
 
 ## Tradeoffs & If I had more time
 
@@ -54,22 +49,17 @@
 
 ---
 
-<br>
 
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
   - [Installation](#installation)
   - [Usage](#usage)
   - [Testing](#testing)
+- [Dependencies](#dependencies)
 - [Project Structure](#project-structure)
-  - [Project Index](#project-index)
 
-<br>
-
-<br>
 
 ---
 
@@ -178,7 +168,6 @@ The core game logic and API client is in the `internal/engine`, `internal/rand`,
 [![][back-to-top]](#top)
 
 </div>
-
 
 [back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
 
