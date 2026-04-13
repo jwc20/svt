@@ -7,7 +7,7 @@
 
 # Silicon Trail
 
-<em>Don't forget to pay the AWS bills</em>
+<em>Don't forget to pay the AWS bills!</em>
 
 <!-- BADGES -->
 
