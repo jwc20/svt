@@ -104,7 +104,6 @@ go build -o svt cmd/ssh # build the binary
 
 Run the project with:
 
-**Using [go modules](https://golang.org/):**
 ```sh
 # If the binary is built
 go build -o svt cmd/ssh 
@@ -129,9 +128,6 @@ https://github.com/user-attachments/assets/ec4471b6-fd84-4718-ad35-6a4e1ba8b411
 
 ### Testing
 
-Svt uses the {__test_framework__} test framework. Run the test suite with:
-
-**Using [go modules](https://golang.org/):**
 ```sh
 go test ./...
 ```
