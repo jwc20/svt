@@ -41,6 +41,10 @@
 
 - See [ai_uses](notes/ai-uses.md)
 
+## Tradeoffs & If I had more time
+
+- See [tradeoffs-and-if-i-had-more-time.md](notes/tradeoffs-and-if-i-had-more-time.md)
+
 ### API Choices
 
 - [random.org](https://www.random.org/)

@@ -13,7 +13,7 @@
 
 ---
 
-## Hacker News Bonus (pre-game, from player's HN username)
+## Hacker News Bonus
 
 **Flow:**
 1. Player SSHs in → `CreatePlayer(publicKey, username)` runs
