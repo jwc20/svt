@@ -18,16 +18,18 @@ type RootModel struct {
 	lobby         LobbyModel
 	game          *GameModel
 	store         engine.GameStore
-	playerId      string
+	playerId      int64
+	userName      string
 	width, height int
 }
 
-func NewRootModel(store engine.GameStore, userID string) RootModel {
+func NewRootModel(store engine.GameStore, playerID int64, userName string) RootModel {
 	return RootModel{
 		state:    LobbyView,
-		lobby:    NewLobbyModel(userID),
+		lobby:    NewLobbyModel(userName),
 		store:    store,
-		playerId: userID,
+		playerId: playerID,
+		userName: userName,
 	}
 }
 
@@ -49,7 +51,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case StartGameMsg:
-		gm := NewGameModel(m.store, m.width, m.height)
+		gm := NewGameModel(m.store, m.playerId, m.width, m.height)
 		m.game = &gm
 		m.state = GameView
 		return m, m.game.Init()

@@ -7,18 +7,42 @@ import (
 )
 
 type StubGameStore struct {
-	State GameState
-	Saved bool
+	Games  map[int64]*GameState
+	NextID int64
 }
 
-func (s *StubGameStore) SaveState(state GameState) error {
-	s.Saved = true
-	s.State = state
+func NewStubGameStore() *StubGameStore {
+	return &StubGameStore{Games: make(map[int64]*GameState), NextID: 1}
+}
+
+func (s *StubGameStore) CreatePlayer(publicKey string) (int64, error) {
+	return 1, nil
+}
+
+func (s *StubGameStore) GetPlayerByKey(publicKey string) (int64, error) {
+	return 1, nil
+}
+
+func (s *StubGameStore) NewGame(playerID int64, state *GameState) (int64, error) {
+	id := s.NextID
+	s.NextID++
+	cp := *state
+	s.Games[id] = &cp
+	return id, nil
+}
+
+func (s *StubGameStore) SaveGame(playerID int64, gameID int64, state *GameState) error {
+	cp := *state
+	s.Games[gameID] = &cp
 	return nil
 }
 
-func (s *StubGameStore) LoadState() (GameState, error) {
-	return s.State, nil
+func (s *StubGameStore) LoadActiveGame(playerID int64) (int64, *GameState, error) {
+	return 0, nil, nil
+}
+
+func (s *StubGameStore) FinishGame(gameID int64, score *int) error {
+	return nil
 }
 
 func TestGameConstants(t *testing.T) {
@@ -295,4 +319,123 @@ func TestSystemDeathRoll(t *testing.T) {
 	// Edge case: ceiling of 1
 	result := SystemDeathRoll(1)
 	assert.Equal(t, 1, result)
+}
+
+func TestCalcScore(t *testing.T) {
+	t.Run("basic scoring", func(t *testing.T) {
+		gs := GameState{
+			Cash:       1000,
+			Hype:       50,
+			TechDebt:   10,
+			BugCount:   5,
+			TurnNumber: 6,
+			Server:     ServerFargate,
+			Database:   DBAurora,
+		}
+		// techHealth = 100 - 10 - 15 = 75
+		// score = 1000 + (50*10) + (75*5) - (6*20) + 0 + 0 = 1000 + 500 + 375 - 120 = 1755
+		assert.Equal(t, 1755, CalcScore(&gs))
+	})
+
+	t.Run("with server and db bonuses", func(t *testing.T) {
+		gs := GameState{
+			Cash:       1000,
+			Hype:       50,
+			TechDebt:   10,
+			BugCount:   5,
+			TurnNumber: 6,
+			Server:     ServerThinkPad,
+			Database:   DBSQLite,
+		}
+		// 1755 + 200 + 150 = 2105
+		assert.Equal(t, 2105, CalcScore(&gs))
+	})
+}
+
+func TestSerializeDeserializeRoundTrip(t *testing.T) {
+	gs := &GameState{
+		TurnNumber: 3,
+		Server:     ServerThinkPad,
+		Database:   DBSQLite,
+		Cash:       1200,
+		Hype:       65,
+		TechDebt:   4,
+		BugCount:   2,
+		Miles:      420,
+		UserCount:  650,
+		TurnHistory: []TurnEntry{
+			{Action: 1, DeathRoll: DeathRollNone, EventID: 0},
+			{Action: 2, DeathRoll: DeathRollWin, EventID: 3},
+			{Action: 1, DeathRoll: DeathRollNone, EventID: 15},
+		},
+	}
+
+	serialized := Serialize(gs)
+	assert.Equal(t, "3;s4d3;a1/a2w/a1;1200/65/4/2/420/650 - 0/3/15", serialized)
+
+	restored, err := Deserialize(serialized)
+	assert.NoError(t, err)
+
+	assert.Equal(t, gs.TurnNumber, restored.TurnNumber)
+	assert.Equal(t, gs.Server, restored.Server)
+	assert.Equal(t, gs.Database, restored.Database)
+	assert.Equal(t, gs.Cash, restored.Cash)
+	assert.Equal(t, gs.Hype, restored.Hype)
+	assert.Equal(t, gs.TechDebt, restored.TechDebt)
+	assert.Equal(t, gs.BugCount, restored.BugCount)
+	assert.Equal(t, gs.Miles, restored.Miles)
+	assert.Equal(t, gs.UserCount, restored.UserCount)
+
+	assert.Equal(t, len(gs.TurnHistory), len(restored.TurnHistory))
+	for i, te := range gs.TurnHistory {
+		assert.Equal(t, te.Action, restored.TurnHistory[i].Action)
+		assert.Equal(t, te.DeathRoll, restored.TurnHistory[i].DeathRoll)
+		assert.Equal(t, te.EventID, restored.TurnHistory[i].EventID)
+	}
+}
+
+func TestSerializeDeserializeDeathRollLoss(t *testing.T) {
+	gs := &GameState{
+		TurnNumber: 1,
+		Server:     ServerEC2,
+		Database:   DBRDS,
+		Cash:       1400,
+		Hype:       80,
+		TurnHistory: []TurnEntry{
+			{Action: 2, DeathRoll: DeathRollLoss, EventID: 7},
+		},
+	}
+
+	serialized := Serialize(gs)
+	assert.Contains(t, serialized, "a2l")
+
+	restored, err := Deserialize(serialized)
+	assert.NoError(t, err)
+	assert.Equal(t, DeathRollLoss, restored.TurnHistory[0].DeathRoll)
+}
+
+func TestDeserializeInvalid(t *testing.T) {
+	_, err := Deserialize("garbage")
+	assert.Error(t, err)
+
+	_, err = Deserialize("1;s1d1;a1;100/50/0/0/0/0")
+	assert.Error(t, err, "missing event history separator")
+}
+
+func TestSerializeEmptyTurnHistory(t *testing.T) {
+	gs := &GameState{
+		TurnNumber:  0,
+		Server:      ServerFargate,
+		Database:    DBAurora,
+		Cash:        1500,
+		Hype:        75,
+		TurnHistory: []TurnEntry{},
+	}
+
+	serialized := Serialize(gs)
+	assert.Equal(t, "0;s1d1;;1500/75/0/0/0/0 - ", serialized)
+
+	restored, err := Deserialize(serialized)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(restored.TurnHistory))
 }

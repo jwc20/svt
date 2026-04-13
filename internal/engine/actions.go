@@ -171,7 +171,7 @@ func TechHealth(gs *GameState) int {
 	return 100 - gs.TechDebt - gs.BugCount*3
 }
 
-func ApplyEndOfTurn(gs *GameState) (int, int, int, int, int, string) {
+func ApplyEndOfTurn(gs *GameState) (int, int, int, int, int, string, int) {
 	// 1. Cash burn deducted
 	cashBurn := CalcCashBurn(gs)
 	gs.Cash -= cashBurn
@@ -193,7 +193,7 @@ func ApplyEndOfTurn(gs *GameState) (int, int, int, int, int, string) {
 	UpdateUserCount(gs)
 
 	// 7. Random event rolled
-	eventMsg := GenerateEvent(gs)
+	eventMsg, eventID := GenerateEvent(gs)
 
-	return cashBurn, revenue, hypeDecay, techDebtAdded, bugsAdded, eventMsg
+	return cashBurn, revenue, hypeDecay, techDebtAdded, bugsAdded, eventMsg, eventID
 }
