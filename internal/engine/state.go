@@ -87,7 +87,7 @@ type GameState struct {
 	Database DBOption
 
 	TurnNumber   int
-	ActionChoice int // 1 = push forward, 2 = fix bugs
+	ActionChoice int // 1 = push forward, 2 = fix bugs, 3 = marketing push
 
 	TurnHistory []TurnEntry
 }
