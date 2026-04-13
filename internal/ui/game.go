@@ -59,6 +59,8 @@ type GameModel struct {
 	deathRollCeiling int // current upper bound for player's next roll
 
 	pendingEntry engine.TurnEntry // accumulates action/death roll before finishTurn
+
+	confirmLeave bool
 }
 
 func NewGameModel(st engine.GameStore, playerID int64, w, h int) GameModel {
@@ -116,9 +118,22 @@ func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 			if m.gameOver {
 				return m, func() tea.Msg { return BackToLobbyMsg{} }
 			}
+			if m.confirmLeave {
+				return m, func() tea.Msg { return BackToLobbyMsg{} }
+			}
+			m.confirmLeave = true
 			return m, nil
 		case "enter":
+			if m.confirmLeave {
+				m.confirmLeave = false
+				return m, nil
+			}
 			return m.handleInput()
+		default:
+			if m.confirmLeave {
+				m.confirmLeave = false
+				return m, nil
+			}
 		}
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
@@ -479,7 +494,12 @@ func (m GameModel) View() tea.View {
 	columns := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, rightCol)
 	outer := outerBorder.Width(m.width - 2).Height(innerH).Render(columns)
 
-	help := DimStyle.Render("ctrl+c: quit")
+	var help string
+	if m.confirmLeave {
+		help = BadStyle.Render("Are you sure you want to leave? esc: yes  any key: cancel")
+	} else {
+		help = DimStyle.Render("esc: leave  ctrl+c: quit")
+	}
 	content := lipgloss.JoinVertical(lipgloss.Left, outer, help)
 	v := tea.NewView(content)
 	v.AltScreen = true

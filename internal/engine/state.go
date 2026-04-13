@@ -100,7 +100,7 @@ func InitState() GameState {
 		TechDebt: 0,
 		BugCount: 0,
 		Miles:    0,
-		Server:   ServerFargate,  // default, will be chosen by player
-		Database: DBAurora,       // default, will be chosen by player
+		Server:   ServerFargate, // default, will be chosen by player
+		Database: DBAurora,      // default, will be chosen by player
 	}
 }

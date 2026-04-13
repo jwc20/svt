@@ -156,3 +156,31 @@ func (s *SQLiteStore) FinishGame(gameID int64, score *int) error {
 	`, score, gameID)
 	return err
 }
+
+func (s *SQLiteStore) Leaderboard(limit int) ([]engine.LeaderboardEntry, error) {
+	rows, err := s.db.Query(`
+		SELECT p.public_key, g.score, g.updated_at
+		FROM games g
+		JOIN players p ON p.id = g.player_id
+		WHERE g.ended = TRUE AND g.score IS NOT NULL
+		ORDER BY g.score DESC
+		LIMIT ?
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []engine.LeaderboardEntry
+	rank := 1
+	for rows.Next() {
+		var e engine.LeaderboardEntry
+		if err := rows.Scan(&e.PublicKey, &e.Score, &e.EndedAt); err != nil {
+			return nil, err
+		}
+		e.Rank = rank
+		rank++
+		entries = append(entries, e)
+	}
+	return entries, rows.Err()
+}
