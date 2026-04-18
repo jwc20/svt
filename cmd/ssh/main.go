@@ -25,7 +25,7 @@ import (
 
 const (
 	host = "localhost"
-	port = "22"
+	port = "23234"
 )
 
 func main() {
@@ -80,14 +80,14 @@ func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 
 		key := s.PublicKey()
 		if key == nil {
-			wish.Fatalln(s, "public key required")
-			return nil
-
+			//wish.Fatalln(s, "public key required")
+			//return nil
+			
 			// https://github.com/charmbracelet/ssh/blob/ebfa259c73091350caed965eb59c2bb8cd90e7e1/_examples/ssh-publickey/public_key.go#L14
-			// parsed, _, _, _, _ := ssh.ParseAuthorizedKey(
-			// 	[]byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxWe2rXKoiO6W14LYPVfJKzRfJ1f3Jhzxrgjc/D4tU7"),
-			// )
-			// key = parsed
+			parsed, _, _, _, _ := ssh.ParseAuthorizedKey(
+				[]byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxWe2rXKoiO6W14LYPVfJKzRfJ1f3Jhzxrgjc/D4tU7"),
+			)
+			key = parsed
 		}
 
 		// Marshal the public key to authorized_keys format (e.g. "ssh-ed25519 AAAA...")
