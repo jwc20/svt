@@ -78,19 +78,22 @@ func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 			return nil
 		}
 
-		userName := s.User()
-		var pubKeyStr string
-
 		key := s.PublicKey()
-		if key != nil {
-			// User has a real SSH key, use the standard format
-			pubKeyStr = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(key)))
-		} else {
-			// Fallback: Use a combination of username and remote address
-			// This allows users without keys to still have a unique record
-			remoteAddr := s.RemoteAddr().String()
-			pubKeyStr = "unauthenticated:" + userName + ":" + remoteAddr
+		if key == nil {
+			wish.Fatalln(s, "public key required")
+			return nil
+
+			// https://github.com/charmbracelet/ssh/blob/ebfa259c73091350caed965eb59c2bb8cd90e7e1/_examples/ssh-publickey/public_key.go#L14
+			// parsed, _, _, _, _ := ssh.ParseAuthorizedKey(
+			// 	[]byte("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILxWe2rXKoiO6W14LYPVfJKzRfJ1f3Jhzxrgjc/D4tU7"),
+			// )
+			// key = parsed
 		}
+
+		// Marshal the public key to authorized_keys format (e.g. "ssh-ed25519 AAAA...")
+		pubKeyStr := strings.TrimSpace(string(gossh.MarshalAuthorizedKey(key)))
+
+		userName := s.User()
 
 		playerID, err := db.CreatePlayer(pubKeyStr, userName)
 		if err != nil {
