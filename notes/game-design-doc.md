@@ -239,4 +239,4 @@ Where `apiGatewayCost = 129` if either server or database is an AWS service, oth
 
 ## Data Modeling
 
-![erd.png](journal/img/erd.png)
+![erd.png](img/erd.png)

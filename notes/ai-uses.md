@@ -10,7 +10,7 @@
 - Very little AI was used during this stage; when it was, it was to translate some of the confusing BASIC code.
 - AI was not used to brainstorm gameplay or feature ideas.
 - GitHub Desktop's built-in AI was used to generate commit messages throughout the project.
-  - ![ai-use1.jpg](journal/img/ai-use1.jpg)
+  - ![ai-use1.jpg](img/ai-use1.jpg)
 
 ## Day 5
 
@@ -20,7 +20,7 @@
 
 - Game prompts were written using Claude Opus.
 
-![ai-use0.jpg](journal/img/ai-use0.jpg)
+![ai-use0.jpg](img/ai-use0.jpg)
 
 ## Days 6–7
 
