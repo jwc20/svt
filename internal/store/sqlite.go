@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
+	// _ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 
 	"github.com/jwc20/svt/internal/engine"
 )
@@ -15,7 +16,7 @@ type SQLiteStore struct {
 }
 
 func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
-	db, err := sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_busy_timeout=5000")
+	db, err := sql.Open("sqlite", dbPath+"?_journal_mode=WAL&_busy_timeout=5000")
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
