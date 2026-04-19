@@ -39,9 +39,10 @@ func main() {
 		ssh.AllocatePty(),
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
-		//wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
-		//	return key.Type() == "ssh-ed25519"
-		//}),
+		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
+			return true
+			//return key.Type() == "ssh-ed25519"
+		}),
 		wish.WithMiddleware(
 			SvtBubbleteaMiddleware(db),
 			logging.Middleware(),
@@ -82,6 +83,7 @@ func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 		var pubKeyStr string
 
 		key := s.PublicKey()
+		log.Infof("User %s connected with public key %s", userName, key)
 		if key != nil {
 			// User has a real SSH key, use the standard format
 			pubKeyStr = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(key)))
