@@ -24,6 +24,18 @@
 
 ---
 
+## LIVE DEMO!
+
+You can run ssh into the deployed server by running the command:
+
+```bash
+ssh siliconvalleytrail.xyz
+
+# if you don't have public key then run the command below:
+# ssh-keygen -t ed25519 -C "your_email@email.com"
+```
+
+
 ## Deliverables
 
 - See [deliverables-and-req.md](notes/deliverables-and-req.md)
