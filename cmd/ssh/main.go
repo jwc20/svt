@@ -103,7 +103,13 @@ func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 		bonusHype, err := db.GetBonusHype(playerID)
 		if err != nil || bonusHype < 0 {
 			bonusHype = hackernews.FetchBonusHype(userName)
-			_ = db.SetBonusHype(playerID, bonusHype)
+			if err := db.SetBonusHype(playerID, bonusHype); err != nil {
+				log.Error("could not persist bonus hype",
+					"player_id", playerID,
+					"user", userName,
+					"error", err,
+				)
+			}
 		}
 
 		m := ui.NewRootModel(db, playerID, userName, bonusHype)
