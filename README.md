@@ -52,15 +52,12 @@ ssh siliconvalleytrail.xyz
 
 - See [tradeoffs-and-if-i-had-more-time.md](notes/tradeoffs-and-if-i-had-more-time.md)
 
-### API Choices
+## API Choices
 
 - [random.org](https://www.random.org/)
 - [HackerNews Algolia](https://hn.algolia.com)
 
-<br>
-
 ---
-
 
 ## Table of Contents
 
@@ -154,21 +151,11 @@ go test ./...
 
 ## Project Structure
 
-The application uses:
-
-- **[Bubble Tea v2 framework](https://github.com/charmbracelet/bubbletea)** for terminal user interfaces
-- **[Lipgloss](https://github.com/charmbracelet/lipgloss)** for styling
-- **[Wish](https://github.com/charmbracelet/wish)** for secure SSH connections
-
-The core game logic and API clients are located in the `internal/` directory:
-
 ```sh
 └── svt/
     ├── README.md
     ├── cmd
     │   └── ssh              # SSH Wish Server
-    ├── go.mod
-    ├── go.sum
     ├── internal
     │   ├── engine           # Game Logic
     │   ├── rand             # Random Number Generation API Client
@@ -177,8 +164,6 @@ The core game logic and API clients are located in the `internal/` directory:
     │   └── ui               # Bubble Tea Terminal User Interface
     └── notes
 ```
-
-
 
 <div align="right">
 
