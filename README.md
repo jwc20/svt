@@ -31,32 +31,7 @@ You can run ssh into the deployed server by running the command:
 
 ```bash
 ssh siliconvalleytrail.xyz
-
-# if you don't have public key then run the command below:
-# ssh-keygen -t ed25519 -C "your_email@email.com"
 ```
-
-
-## Deliverables
-
-- See [deliverables-and-req.md](notes/deliverables-and-req.md)
-
-## Game Design
-
-- See [game-design-doc.md](notes/game-design-doc.md)
-
-## AI Uses
-
-- See [ai-uses.md](notes/ai-uses.md)
-
-## Tradeoffs & If I had more time
-
-- See [tradeoffs-and-if-i-had-more-time.md](notes/tradeoffs-and-if-i-had-more-time.md)
-
-## API Choices
-
-- [random.org](https://www.random.org/)
-- [HackerNews Algolia](https://hn.algolia.com)
 
 ---
 
@@ -139,13 +114,10 @@ go test ./...
 
 ## Dependencies
 
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea) — Terminal user interface framework
+- [Bubble Tea v2](https://github.com/charmbracelet/bubbletea) — Terminal user interface framework
 - [Wish SSH](https://github.com/charmbracelet/wish) — Secure SSH server
 - [Lipgloss](https://github.com/charmbracelet/lipgloss) — Terminal styling
-- [Bubbles](https://github.com/charmbracelet/bubbles) — UI components (tables, viewports)
-- [joho/godotenv](https://github.com/joho/godotenv) — Environment variable loading
-- [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) — SQLite driver
-- [stretchr/testify](https://github.com/stretchr/testify) — Testing assertions
+- [HackerNews Algolia API](https://hn.algolia.com) — Bonus point
 
 ---
 
@@ -159,11 +131,9 @@ go test ./...
     │   └── ssh              # SSH Wish Server
     ├── internal
     │   ├── engine           # Game Logic
-    │   ├── rand             # Random Number Generation API Client
     │   ├── hackernews       # Hacker News API Client
     │   ├── store            # SQLite Database
-    │   └── ui               # Bubble Tea Terminal User Interface
-    └── notes
+    └── └── ui               # Bubble Tea Terminal User Interface
 ```
 
 <div align="right">
