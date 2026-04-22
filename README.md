@@ -1,9 +1,10 @@
+
 <div id="top">
 
 <!-- HEADER STYLE: CLASSIC -->
 <div align="center">
 
-<img src="notes/img/Sprite-silicon-stone.png" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
+<img src="https://github.com/user-attachments/assets/140838f6-b4d9-4744-ba4b-51dbd5285236" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
 
 # Silicon Trail
 
