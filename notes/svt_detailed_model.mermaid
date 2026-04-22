@@ -1,0 +1,13 @@
+---
+config:
+  layout: dagre
+  theme: mc
+  look: classic
+---
+flowchart TB
+    TUR["Total Up Resources"] --> StopFort["Marketing"] & Hunt["Fix Bugs"] & Continue["Continue"]
+    StopFort --> Eat["Pay AWS Bills"]
+    Hunt --> Eat
+    Continue --> Eat
+    Eat -->  Misfortunes1["Random Events"]
+    Misfortunes1 --> TUR
