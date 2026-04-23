@@ -13,7 +13,7 @@
 <!-- BADGES -->
 
 <img src="https://img.shields.io/github/last-commit/jwc20/svt?style=default&logo=git&logoColor=white&color=0080ff" alt="last-commit">
-
+<img src="https://img.shields.io/github/license/jwc20/svt?style=default&logo=opensourceinitiative&logoColor=white&color=0080ff" alt="license">
 
 </div>
 
