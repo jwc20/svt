@@ -28,11 +28,11 @@ type RootModel struct {
 
 func NewRootModel(store engine.GameStore, playerID int64, userName string, bonusHype int) RootModel {
 	return RootModel{
-		state:    LobbyView,
-		lobby:    NewLobbyModel(userName),
-		store:    store,
-		playerId: playerID,
-		userName: userName,
+		state:     LobbyView,
+		lobby:     NewLobbyModel(userName),
+		store:     store,
+		playerId:  playerID,
+		userName:  userName,
 		bonusHype: bonusHype,
 	}
 }
