@@ -435,6 +435,7 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 
 	switch result {
 	case "won":
+		score += engine.WinBonus
 		m.promptTitle = "CONGRATULATIONS!"
 		m.promptLines = []string{
 			"", GoodStyle.Render("YOUR STARTUP MADE IT TO SAN FRANCISCO!"), "",

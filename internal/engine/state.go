@@ -7,6 +7,7 @@ const (
 	InitialCash          = 1500
 	InitialHypeBase      = 50
 	TotalTurns           = 12
+	WinBonus             = 1000
 )
 
 // ServerOption represents infrastructure server choices.
