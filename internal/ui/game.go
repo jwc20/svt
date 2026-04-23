@@ -430,12 +430,11 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 	m.gameOver = true
 	m.gameResult = result
 	m.deathMessage = deathMsg
+	score := engine.CalcScore(&m.state)
+	_ = m.store.FinishGame(m.gameID, &score)
 
 	switch result {
 	case "won":
-		score := engine.CalcScore(&m.state)
-		_ = m.store.FinishGame(m.gameID, &score)
-
 		m.promptTitle = "CONGRATULATIONS!"
 		m.promptLines = []string{
 			"", GoodStyle.Render("YOUR STARTUP MADE IT TO SAN FRANCISCO!"), "",
@@ -449,8 +448,6 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 			"", DimStyle.Render("Press esc to return to lobby."),
 		}
 	default:
-		_ = m.store.FinishGame(m.gameID, nil)
-
 		m.promptTitle = "GAME OVER"
 		m.promptLines = []string{
 			"", BadStyle.Render(deathMsg), "",
