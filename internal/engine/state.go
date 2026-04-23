@@ -1,8 +1,6 @@
 package engine
 
-import (
-	"github.com/jwc20/svt/internal/rand"
-)
+import "math/rand"
 
 const (
 	TotalRequiredMileage = 2040
@@ -93,7 +91,7 @@ type GameState struct {
 }
 
 func InitState(bonusHype int) GameState {
-	hype := InitialHypeBase + rand.GetRandomInt(50) + bonusHype
+	hype := InitialHypeBase + rand.Intn(50) + bonusHype
 	return GameState{
 		Cash:     InitialCash,
 		Hype:     hype,
