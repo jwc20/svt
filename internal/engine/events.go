@@ -235,9 +235,9 @@ func GenerateEvent(gs *GameState) (string, int) {
 	if gs.Hype < 0 {
 		gs.Hype = 0
 	}
-	gs.Miles += evt.Effect.MilesDelta
-	if gs.Miles < 0 {
-		gs.Miles = 0
+	gs.ProductReadiness += evt.Effect.MilesDelta
+	if gs.ProductReadiness < 0 {
+		gs.ProductReadiness = 0
 	}
 	gs.TechDebt += evt.Effect.TechDebtDelta
 	if gs.TechDebt < 0 {

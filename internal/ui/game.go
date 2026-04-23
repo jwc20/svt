@@ -228,7 +228,7 @@ func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 		m.pendingEntry = engine.TurnEntry{Action: 1, DeathRoll: engine.DeathRollNone}
 		m.addChoice(">> Push forward")
 		miles := engine.AdvanceMileage(&m.state)
-		m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+		m.addChoice(fmt.Sprintf("  +%d product (total: %d/%d)", miles, m.state.ProductReadiness, engine.TotalRequiredProduct))
 		return m.finishTurn()
 	}
 
@@ -245,7 +245,7 @@ func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 		hypeGained, spent := engine.MarketingPush(&m.state)
 		miles := engine.AdvanceMileage(&m.state)
 		m.addChoice(fmt.Sprintf("  Spent $%d on marketing, gained %d hype (now %d)", spent, hypeGained, m.state.Hype))
-		m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+		m.addChoice(fmt.Sprintf("  +%d product (total: %d/%d)", miles, m.state.ProductReadiness, engine.TotalRequiredProduct))
 		return m.finishTurn()
 	}
 
@@ -298,11 +298,11 @@ func (m GameModel) deathRollWin() (GameModel, tea.Cmd) {
 	m.pendingEntry.DeathRoll = engine.DeathRollWin
 	m.addChoice(GoodStyle.Render("  You won the death roll!"))
 
-	// apply bug fix + mileage only on win
+	// apply bug fix + product only on win
 	bugsFixed, debtFixed := engine.FixBugs(&m.state)
 	miles := engine.AdvanceMileage(&m.state)
 	m.addChoice(fmt.Sprintf("  Fixed %d bugs, reduced %d tech debt", bugsFixed, debtFixed))
-	m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+	m.addChoice(fmt.Sprintf("  +%d product (total: %d/%d)", miles, m.state.ProductReadiness, engine.TotalRequiredProduct))
 	m.addChoice("")
 	return m.finishTurn()
 }
@@ -312,7 +312,7 @@ func (m GameModel) deathRollLose() (GameModel, tea.Cmd) {
 	m.addChoice(WarnStyle.Render("  You rolled 1! You lost the death roll."))
 
 	miles := engine.AdvanceMileage(&m.state)
-	m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+	m.addChoice(fmt.Sprintf("  +%d product (total: %d/%d)", miles, m.state.ProductReadiness, engine.TotalRequiredProduct))
 	m.addChoice("")
 	return m.finishTurn()
 }
@@ -409,9 +409,9 @@ func (m *GameModel) setTurnPrompt() {
 	m.promptLines = []string{
 		"What do you want to do?",
 		"",
-		"(1) Push forward -- advance miles normally",
-		"(2) Fix bugs -- miles halved, fix bugs + death roll",
-		fmt.Sprintf("(3) Marketing push (cost: $%d) -- miles halved, spend cash to gain hype", marketingCost),
+		"(1) Push forward",
+		"(2) Fix bugs",
+		fmt.Sprintf("(3) Marketing push (cost: $%d)", marketingCost),
 	}
 }
 
@@ -451,7 +451,7 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 		m.promptTitle = "GAME OVER"
 		m.promptLines = []string{
 			"", BadStyle.Render(deathMsg), "",
-			fmt.Sprintf("Mileage reached: %d / %d", m.state.Miles, engine.TotalRequiredMileage),
+			fmt.Sprintf("Product reached: %d / %d", m.state.ProductReadiness, engine.TotalRequiredProduct),
 			fmt.Sprintf("Turns played: %d", m.state.TurnNumber),
 			fmt.Sprintf("Cash: $%d", m.state.Cash),
 			fmt.Sprintf("Hype: %d", m.state.Hype),
@@ -534,8 +534,8 @@ func (m GameModel) renderStatus() string {
 		sb.WriteString(fmt.Sprintf("Turn %d: %s\n", turn, engine.CurrentLocation(turn)))
 	}
 
-	sb.WriteString(PlainLabel.Render("Mileage") + "\n")
-	sb.WriteString(fmt.Sprintf("%d / %d\n", m.state.Miles, engine.TotalRequiredMileage))
+	sb.WriteString(PlainLabel.Render("Product Readiness") + "\n")
+	sb.WriteString(fmt.Sprintf("%d / %d\n", m.state.ProductReadiness, engine.TotalRequiredProduct))
 
 	sb.WriteString("\n")
 	sb.WriteString(PlainLabel.Render("Startup Stats") + "\n")

@@ -3,7 +3,7 @@ package engine
 import "math/rand"
 
 const (
-	TotalRequiredMileage = 2040
+	TotalRequiredProduct = 2040
 	InitialCash          = 1500
 	InitialHypeBase      = 50
 	TotalTurns           = 12
@@ -74,12 +74,12 @@ type TurnEntry struct {
 }
 
 type GameState struct {
-	Cash      int
-	Hype      int
-	TechDebt  int
-	BugCount  int
-	Miles     int
-	UserCount int
+	Cash             int
+	Hype             int
+	TechDebt         int
+	BugCount         int
+	ProductReadiness int
+	UserCount        int
 
 	Server   ServerOption
 	Database DBOption
@@ -93,12 +93,12 @@ type GameState struct {
 func InitState(bonusHype int) GameState {
 	hype := InitialHypeBase + rand.Intn(50) + bonusHype
 	return GameState{
-		Cash:     InitialCash,
-		Hype:     hype,
-		TechDebt: 0,
-		BugCount: 0,
-		Miles:    0,
-		Server:   ServerFargate, // default, will be chosen by player
-		Database: DBAurora,      // default, will be chosen by player
+		Cash:             InitialCash,
+		Hype:             hype,
+		TechDebt:         0,
+		BugCount:         0,
+		ProductReadiness: 0,
+		Server:           ServerFargate, // default, will be chosen by player
+		Database:         DBAurora,      // default, will be chosen by player
 	}
 }
