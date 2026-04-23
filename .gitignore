@@ -15,3 +15,4 @@ go.work.sum
 .ssh
 svt.db*
 svt
+svt-local
