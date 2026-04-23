@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"net"
@@ -23,12 +24,58 @@ import (
 	"github.com/jwc20/svt/internal/ui"
 )
 
-const (
-	host = "0.0.0.0"
-	port = "22"
-)
+// buildMode is set at build time via ldflags: "prod" or "local"
+var buildMode = "local"
+
+func loadEnv(filename string) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+			if os.Getenv(key) == "" {
+				os.Setenv(key, value)
+			}
+		}
+	}
+}
+
+func getHostPort() (string, string) {
+	loadEnv(".env")
+
+	var host, port string
+	if buildMode == "prod" {
+		host = os.Getenv("PROD_HOST")
+		port = os.Getenv("PROD_PORT")
+	} else {
+		host = os.Getenv("LOCAL_HOST")
+		port = os.Getenv("LOCAL_PORT")
+	}
+
+	// Defaults
+	if host == "" {
+		host = "0.0.0.0"
+	}
+	if port == "" {
+		port = "22"
+	}
+	return host, port
+}
 
 func main() {
+	host, port := getHostPort()
+
 	db, err := store.NewSQLiteStore("svt.db")
 	if err != nil {
 		log.Fatal("Could not open database", "error", err)

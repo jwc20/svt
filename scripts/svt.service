@@ -1,0 +1,15 @@
+[Unit]
+Description=SVT Bubble Tea SSH Game
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+ExecStart=/usr/local/bin/svt
+Restart=always
+RestartSec=3
+Environment=DB_PATH=/root/svt.db
+
+[Install]
+WantedBy=multi-user.target
