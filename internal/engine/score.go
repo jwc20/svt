@@ -14,7 +14,7 @@ var dbScoreBonus = map[DBOption]int{
 }
 
 // CalcScore computes the end-game score.
-// Score = cash + (hype * 10) + (techHealth * 5) - (totalTurns * 20) + serverBonus + dbBonus
+// Score = (cash - diffCash) + ((hype - diffHype) * 10) + (techHealth * 5) - (totalTurns * 20) + serverBonus + dbBonus
 func CalcScore(gs *GameState) int {
 	techHealth := TechHealth(gs)
 

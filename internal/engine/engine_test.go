@@ -23,6 +23,10 @@ func (s *StubGameStore) GetPlayerByKey(publicKey string) (int64, error) {
 	return 1, nil
 }
 
+func (s *StubGameStore) CheckPlayerByID(playerID int64) (bool, error) {
+	return true, nil
+}
+
 func (s *StubGameStore) GetBonusHype(playerID int64) (int, error) {
 	return 0, nil
 }
@@ -332,31 +336,34 @@ func TestFixBugsNoOpWhenPushForward(t *testing.T) {
 func TestCalcScore(t *testing.T) {
 	t.Run("basic scoring", func(t *testing.T) {
 		gs := GameState{
-			Cash:       1000,
-			Hype:       50,
+			Cash:       1500,
+			Hype:       200,
 			TechDebt:   10,
 			BugCount:   5,
 			TurnNumber: 6,
 			Server:     ServerFargate,
 			Database:   DBAurora,
+			Difficulty: Diff1,
 		}
 		// techHealth = 100 - 10 - 15 = 75
-		// score = 1000 + (50*10) + (75*5) - (6*20) + 0 + 0 = 1000 + 500 + 375 - 120 = 1755
+		// score = (1500-1000) + ((200-100)*10) + (75*5) - (6*20) + 0 + 0 = 1755
 		assert.Equal(t, 1755, CalcScore(&gs))
 	})
 
 	t.Run("with server and db bonuses", func(t *testing.T) {
 		gs := GameState{
-			Cash:       1000,
-			Hype:       50,
+			Cash:       1500,
+			Hype:       200,
 			TechDebt:   10,
 			BugCount:   5,
 			TurnNumber: 6,
 			Server:     ServerThinkPad,
 			Database:   DBSQLite,
+			Difficulty: Diff2,
 		}
-		// 1755 + 200 + 150 = 2105
-		assert.Equal(t, 2105, CalcScore(&gs))
+		// techHealth = 100 - 10 - 15 = 75
+		// score = (1500 - 500) + ((200 - 50) * 10) + (techHealth * 5) - (6 * 20) + 200 + 150 = 3105
+		assert.Equal(t, 3105, CalcScore(&gs))
 	})
 }
 
