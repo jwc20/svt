@@ -98,8 +98,10 @@ func NewGameModel(st engine.GameStore, playerID int64, bonusHype int, w, h int) 
 
 	// New game
 	m.state = engine.InitState(bonusHype)
-	m.phase = engine.PhaseServerChoice
-	m.setServerPrompt()
+
+	m.phase = engine.PhaseDifficultyChoice
+	m.setDifficultyPrompt()
+
 	return m
 }
 
@@ -159,6 +161,8 @@ func (m GameModel) handleInput() (GameModel, tea.Cmd) {
 	}
 
 	switch m.phase {
+	case engine.PhaseDifficultyChoice:
+		return m.handleDifficultyChoice(val)
 	case engine.PhaseServerChoice:
 		return m.handleServerChoice(val)
 	case engine.PhaseDBChoice:
@@ -174,6 +178,32 @@ func (m GameModel) handleInput() (GameModel, tea.Cmd) {
 }
 
 // ── phase handlers ────────────────────────────────────────────────
+
+func (m GameModel) handleDifficultyChoice(val string) (GameModel, tea.Cmd) {
+	// choice 1: stanford graduate starting cash+, hype+
+	// choice 2: computer student cash+, hype
+	// choice 3: no bonus
+
+	choice, err := strconv.Atoi(val)
+	if err != nil || !engine.SetDifficulty(&m.state, choice) {
+		m.addChoice("Invalid -- enter 1-3")
+		return m, nil
+	}
+
+	// engine
+	difficulty := engine.DifficultySpecs[m.state.Difficulty]
+	m.addChoice(fmt.Sprintf("bonus cash: %d, bonus hype: %d", difficulty.BonusCash, difficulty.BonusHype))
+	m.addChoice("---")
+
+	m.state.Cash += difficulty.BonusCash
+	m.state.Hype += difficulty.BonusHype
+
+	// next phase
+	m.phase = engine.PhaseServerChoice
+	m.setServerPrompt()
+
+	return m, nil
+}
 
 func (m GameModel) handleServerChoice(val string) (GameModel, tea.Cmd) {
 	choice, err := strconv.Atoi(val)
@@ -375,6 +405,15 @@ func (m GameModel) startTurn() (GameModel, tea.Cmd) {
 }
 
 // ── prompt setters ────────────────────────────────────────────────
+
+func (m *GameModel) setDifficultyPrompt() {
+	m.promptTitle = "CHOOSE DIFFICULTY LEVEL"
+	m.promptLines = []string{
+		"(1) Easy",
+		"(2) Medium",
+		"(3) Hard",
+	}
+}
 
 func (m *GameModel) setServerPrompt() {
 	m.promptTitle = "CHOOSE YOUR SERVER INFRASTRUCTURE"

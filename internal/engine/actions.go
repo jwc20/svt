@@ -7,6 +7,20 @@ import (
 	"charm.land/log/v2"
 )
 
+func SetDifficulty(gs *GameState, choice int) bool {
+	switch choice {
+	case 1:
+		gs.Difficulty = Diff1
+	case 2:
+		gs.Difficulty = Diff2
+	case 3:
+		gs.Difficulty = Diff3
+	default:
+		return false
+	}
+	return true
+}
+
 func SetServer(gs *GameState, choice int) bool {
 	switch choice {
 	case 1:

@@ -64,7 +64,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.game.Init()
 
 	case ShowLeaderboardMsg:
-		entries, err := m.store.Leaderboard(100)
+		entries, err := m.store.Leaderboard(10)
 		if err != nil {
 			return m, nil
 		}
