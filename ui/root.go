@@ -28,11 +28,11 @@ type RootModel struct {
 
 func NewRootModel(store engine.GameStore, playerID int64, userName string, bonusHype int) RootModel {
 	return RootModel{
-		state:    LobbyView,
-		lobby:    NewLobbyModel(userName),
-		store:    store,
-		playerId: playerID,
-		userName: userName,
+		state:     LobbyView,
+		lobby:     NewLobbyModel(userName),
+		store:     store,
+		playerId:  playerID,
+		userName:  userName,
 		bonusHype: bonusHype,
 	}
 }
@@ -64,7 +64,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.game.Init()
 
 	case ShowLeaderboardMsg:
-		entries, err := m.store.Leaderboard(100)
+		entries, err := m.store.Leaderboard(10)
 		if err != nil {
 			return m, nil
 		}

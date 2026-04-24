@@ -7,6 +7,20 @@ import (
 	"charm.land/log/v2"
 )
 
+func SetDifficulty(gs *GameState, choice int) bool {
+	switch choice {
+	case 1:
+		gs.Difficulty = Diff1
+	case 2:
+		gs.Difficulty = Diff2
+	case 3:
+		gs.Difficulty = Diff3
+	default:
+		return false
+	}
+	return true
+}
+
 func SetServer(gs *GameState, choice int) bool {
 	switch choice {
 	case 1:
@@ -61,7 +75,7 @@ func AdvanceMileage(gs *GameState) int {
 	if miles < 0 {
 		miles = 0
 	}
-	gs.Miles += miles
+	gs.ProductReadiness += miles
 	return miles
 }
 
@@ -144,7 +158,7 @@ func AccumulateTechDebt(gs *GameState) int {
 	// techDebt += totalMiles/200 + server.debtMod + db.debtMod + rand(0..3)
 	r := rand.Intn(4) // 0..3
 	log.Info("AccumulateTechDebt called", "randomInt", r)
-	added := gs.Miles/200 + srv.DebtPerTurn + db.DebtPerTurn + r
+	added := gs.ProductReadiness/200 + srv.DebtPerTurn + db.DebtPerTurn + r
 	if added < 0 {
 		added = 0
 	}
@@ -156,7 +170,7 @@ func GenerateBugs(gs *GameState) int {
 	srv := ServerSpecs[gs.Server]
 	db := DBSpecs[gs.Database]
 	// newBugs = floor(totalMiles/400) + server.bugMod + db.bugMod
-	newBugs := gs.Miles / 400
+	newBugs := gs.ProductReadiness / 400
 
 	if srv.BugCeiling > 0 {
 		r := rand.Intn(srv.BugCeiling + 1) // 0..BugCeiling

@@ -3,7 +3,8 @@ package engine
 type GamePhase int
 
 const (
-	PhaseServerChoice GamePhase = iota
+	PhaseDifficultyChoice GamePhase = iota
+	PhaseServerChoice
 	PhaseDBChoice
 	PhaseTurnAction
 	PhaseDeathRoll

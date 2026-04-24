@@ -38,7 +38,7 @@ func IsSystemFailure(gs *GameState) bool {
 }
 
 func IsArrived(gs *GameState) bool {
-	return gs.Miles >= TotalRequiredMileage
+	return gs.ProductReadiness >= TotalRequiredProduct
 }
 
 func CheckLoseCondition(gs *GameState) (string, bool) {

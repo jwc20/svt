@@ -17,11 +17,11 @@ import (
 	"charm.land/wish/v2/bubbletea"
 	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
+	"github.com/jwc20/svt/ui"
 	gossh "golang.org/x/crypto/ssh"
 
 	"github.com/jwc20/svt/internal/hackernews"
 	"github.com/jwc20/svt/internal/store"
-	"github.com/jwc20/svt/internal/ui"
 )
 
 // buildMode is set at build time via ldflags: "prod" or "local"
@@ -135,10 +135,8 @@ func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 			// User has a real SSH key, use the standard format
 			pubKeyStr = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(key)))
 		} else {
-			// Fallback: Use a combination of username and remote address
-			// This allows users without keys to still have a unique record
-			remoteAddr := s.RemoteAddr().String()
-			pubKeyStr = "unauthenticated:" + userName + ":" + remoteAddr
+			wish.Fatalf(s, "no public key found, skipping")
+			return nil
 		}
 
 		playerID, err := db.CreatePlayer(pubKeyStr, userName)

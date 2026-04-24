@@ -3,10 +3,19 @@ package engine
 import "math/rand"
 
 const (
-	TotalRequiredMileage = 2040
+	TotalRequiredProduct = 2040
 	InitialCash          = 1500
 	InitialHypeBase      = 50
 	TotalTurns           = 12
+	WinBonus             = 1000
+)
+
+type DifficultyOption int
+
+const (
+	Diff1 DifficultyOption = iota
+	Diff2
+	Diff3
 )
 
 // ServerOption represents infrastructure server choices.
@@ -46,6 +55,17 @@ type DBSpec struct {
 	IsAWS       bool
 }
 
+type DifficultySpec struct {
+	BonusCash int
+	BonusHype int
+}
+
+var DifficultySpecs = map[DifficultyOption]DifficultySpec{
+	Diff1: {BonusCash: 1000, BonusHype: 100},
+	Diff2: {BonusCash: 500, BonusHype: 50},
+	Diff3: {BonusCash: 0, BonusHype: 0},
+}
+
 var ServerSpecs = map[ServerOption]ServerSpec{
 	ServerFargate:  {Name: "AWS Fargate", MonthlyCost: 0, PerUserCost: 0.05, DebtPerTurn: 0, BugCeiling: 0, IsAWS: true},
 	ServerEC2:      {Name: "AWS EC2", MonthlyCost: 40, PerUserCost: 0, DebtPerTurn: 1, BugCeiling: 1, IsAWS: true},
@@ -74,15 +94,16 @@ type TurnEntry struct {
 }
 
 type GameState struct {
-	Cash      int
-	Hype      int
-	TechDebt  int
-	BugCount  int
-	Miles     int
-	UserCount int
+	Cash             int
+	Hype             int
+	TechDebt         int
+	BugCount         int
+	ProductReadiness int
+	UserCount        int
 
-	Server   ServerOption
-	Database DBOption
+	Difficulty DifficultyOption
+	Server     ServerOption
+	Database   DBOption
 
 	TurnNumber   int
 	ActionChoice int // 1 = push forward, 2 = fix bugs, 3 = marketing push
@@ -93,12 +114,12 @@ type GameState struct {
 func InitState(bonusHype int) GameState {
 	hype := InitialHypeBase + rand.Intn(50) + bonusHype
 	return GameState{
-		Cash:     InitialCash,
-		Hype:     hype,
-		TechDebt: 0,
-		BugCount: 0,
-		Miles:    0,
-		Server:   ServerFargate, // default, will be chosen by player
-		Database: DBAurora,      // default, will be chosen by player
+		Cash:             InitialCash,
+		Hype:             hype,
+		TechDebt:         0,
+		BugCount:         0,
+		ProductReadiness: 0,
+		Server:           ServerFargate, // default, will be chosen by player
+		Database:         DBAurora,      // default, will be chosen by player
 	}
 }

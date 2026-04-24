@@ -193,10 +193,14 @@ func (s *SQLiteStore) FinishGame(gameID int64, score *int) error {
 
 func (s *SQLiteStore) Leaderboard(limit int) ([]engine.LeaderboardEntry, error) {
 	rows, err := s.db.Query(`
-		SELECT p.username, g.score, g.updated_at
+		SELECT 
+		  p.username || '@' || substr(p.public_key, -5) AS username,
+		  g.score,
+		  g.updated_at
 		FROM games g
 		JOIN players p ON p.id = g.player_id
-		WHERE g.ended = TRUE AND g.score IS NOT NULL
+		WHERE g.ended = TRUE 
+		  AND g.score IS NOT NULL
 		ORDER BY g.score DESC
 		LIMIT ?
 	`, limit)

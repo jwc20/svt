@@ -17,5 +17,16 @@ var dbScoreBonus = map[DBOption]int{
 // Score = cash + (hype * 10) + (techHealth * 5) - (totalTurns * 20) + serverBonus + dbBonus
 func CalcScore(gs *GameState) int {
 	techHealth := TechHealth(gs)
-	return gs.Cash + (gs.Hype * 10) + (techHealth * 5) - (gs.TurnNumber * 20) + serverScoreBonus[gs.Server] + dbScoreBonus[gs.Database]
+
+	cashScore := gs.Cash
+	hypeScore := gs.Hype
+	if gs.Difficulty == Diff1 {
+		cashScore = cashScore - DifficultySpecs[Diff1].BonusCash
+		hypeScore = hypeScore - DifficultySpecs[Diff1].BonusHype
+	} else if gs.Difficulty == Diff2 {
+		cashScore = cashScore - DifficultySpecs[Diff2].BonusCash
+		hypeScore = hypeScore - DifficultySpecs[Diff2].BonusHype
+	}
+
+	return cashScore + (hypeScore * 10) + (techHealth * 5) - (gs.TurnNumber * 20) + serverScoreBonus[gs.Server] + dbScoreBonus[gs.Database]
 }

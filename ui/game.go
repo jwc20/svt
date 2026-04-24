@@ -98,8 +98,10 @@ func NewGameModel(st engine.GameStore, playerID int64, bonusHype int, w, h int) 
 
 	// New game
 	m.state = engine.InitState(bonusHype)
-	m.phase = engine.PhaseServerChoice
-	m.setServerPrompt()
+
+	m.phase = engine.PhaseDifficultyChoice
+	m.setDifficultyPrompt()
+
 	return m
 }
 
@@ -159,6 +161,8 @@ func (m GameModel) handleInput() (GameModel, tea.Cmd) {
 	}
 
 	switch m.phase {
+	case engine.PhaseDifficultyChoice:
+		return m.handleDifficultyChoice(val)
 	case engine.PhaseServerChoice:
 		return m.handleServerChoice(val)
 	case engine.PhaseDBChoice:
@@ -174,6 +178,32 @@ func (m GameModel) handleInput() (GameModel, tea.Cmd) {
 }
 
 // ── phase handlers ────────────────────────────────────────────────
+
+func (m GameModel) handleDifficultyChoice(val string) (GameModel, tea.Cmd) {
+	// choice 1: stanford graduate starting cash+, hype+
+	// choice 2: computer student cash+, hype
+	// choice 3: no bonus
+
+	choice, err := strconv.Atoi(val)
+	if err != nil || !engine.SetDifficulty(&m.state, choice) {
+		m.addChoice("Invalid -- enter 1-3")
+		return m, nil
+	}
+
+	// engine
+	difficulty := engine.DifficultySpecs[m.state.Difficulty]
+	m.addChoice(fmt.Sprintf("bonus cash: %d, bonus hype: %d", difficulty.BonusCash, difficulty.BonusHype))
+	m.addChoice("---")
+
+	m.state.Cash += difficulty.BonusCash
+	m.state.Hype += difficulty.BonusHype
+
+	// next phase
+	m.phase = engine.PhaseServerChoice
+	m.setServerPrompt()
+
+	return m, nil
+}
 
 func (m GameModel) handleServerChoice(val string) (GameModel, tea.Cmd) {
 	choice, err := strconv.Atoi(val)
@@ -228,7 +258,7 @@ func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 		m.pendingEntry = engine.TurnEntry{Action: 1, DeathRoll: engine.DeathRollNone}
 		m.addChoice(">> Push forward")
 		miles := engine.AdvanceMileage(&m.state)
-		m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+		m.addChoice(fmt.Sprintf("  +%d product (total: %d/%d)", miles, m.state.ProductReadiness, engine.TotalRequiredProduct))
 		return m.finishTurn()
 	}
 
@@ -245,7 +275,7 @@ func (m GameModel) handleTurnAction(val string) (GameModel, tea.Cmd) {
 		hypeGained, spent := engine.MarketingPush(&m.state)
 		miles := engine.AdvanceMileage(&m.state)
 		m.addChoice(fmt.Sprintf("  Spent $%d on marketing, gained %d hype (now %d)", spent, hypeGained, m.state.Hype))
-		m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+		m.addChoice(fmt.Sprintf("  +%d product (total: %d/%d)", miles, m.state.ProductReadiness, engine.TotalRequiredProduct))
 		return m.finishTurn()
 	}
 
@@ -298,11 +328,11 @@ func (m GameModel) deathRollWin() (GameModel, tea.Cmd) {
 	m.pendingEntry.DeathRoll = engine.DeathRollWin
 	m.addChoice(GoodStyle.Render("  You won the death roll!"))
 
-	// apply bug fix + mileage only on win
+	// apply bug fix + product only on win
 	bugsFixed, debtFixed := engine.FixBugs(&m.state)
 	miles := engine.AdvanceMileage(&m.state)
 	m.addChoice(fmt.Sprintf("  Fixed %d bugs, reduced %d tech debt", bugsFixed, debtFixed))
-	m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+	m.addChoice(fmt.Sprintf("  +%d product (total: %d/%d)", miles, m.state.ProductReadiness, engine.TotalRequiredProduct))
 	m.addChoice("")
 	return m.finishTurn()
 }
@@ -312,7 +342,7 @@ func (m GameModel) deathRollLose() (GameModel, tea.Cmd) {
 	m.addChoice(WarnStyle.Render("  You rolled 1! You lost the death roll."))
 
 	miles := engine.AdvanceMileage(&m.state)
-	m.addChoice(fmt.Sprintf("  +%d miles (total: %d/%d)", miles, m.state.Miles, engine.TotalRequiredMileage))
+	m.addChoice(fmt.Sprintf("  +%d product (total: %d/%d)", miles, m.state.ProductReadiness, engine.TotalRequiredProduct))
 	m.addChoice("")
 	return m.finishTurn()
 }
@@ -376,6 +406,15 @@ func (m GameModel) startTurn() (GameModel, tea.Cmd) {
 
 // ── prompt setters ────────────────────────────────────────────────
 
+func (m *GameModel) setDifficultyPrompt() {
+	m.promptTitle = "CHOOSE DIFFICULTY LEVEL"
+	m.promptLines = []string{
+		"(1) Easy",
+		"(2) Medium",
+		"(3) Hard",
+	}
+}
+
 func (m *GameModel) setServerPrompt() {
 	m.promptTitle = "CHOOSE YOUR SERVER INFRASTRUCTURE"
 	m.promptLines = []string{
@@ -409,9 +448,9 @@ func (m *GameModel) setTurnPrompt() {
 	m.promptLines = []string{
 		"What do you want to do?",
 		"",
-		"(1) Push forward -- advance miles normally",
-		"(2) Fix bugs -- miles halved, fix bugs + death roll",
-		fmt.Sprintf("(3) Marketing push (cost: $%d) -- miles halved, spend cash to gain hype", marketingCost),
+		"(1) Push forward",
+		"(2) Fix bugs",
+		fmt.Sprintf("(3) Marketing push (cost: $%d)", marketingCost),
 	}
 }
 
@@ -430,12 +469,12 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 	m.gameOver = true
 	m.gameResult = result
 	m.deathMessage = deathMsg
+	score := engine.CalcScore(&m.state)
+	_ = m.store.FinishGame(m.gameID, &score)
 
 	switch result {
 	case "won":
-		score := engine.CalcScore(&m.state)
-		_ = m.store.FinishGame(m.gameID, &score)
-
+		score += engine.WinBonus
 		m.promptTitle = "CONGRATULATIONS!"
 		m.promptLines = []string{
 			"", GoodStyle.Render("YOUR STARTUP MADE IT TO SAN FRANCISCO!"), "",
@@ -449,12 +488,10 @@ func (m *GameModel) setGameOver(result, deathMsg string) {
 			"", DimStyle.Render("Press esc to return to lobby."),
 		}
 	default:
-		_ = m.store.FinishGame(m.gameID, nil)
-
 		m.promptTitle = "GAME OVER"
 		m.promptLines = []string{
 			"", BadStyle.Render(deathMsg), "",
-			fmt.Sprintf("Mileage reached: %d / %d", m.state.Miles, engine.TotalRequiredMileage),
+			fmt.Sprintf("Product reached: %d / %d", m.state.ProductReadiness, engine.TotalRequiredProduct),
 			fmt.Sprintf("Turns played: %d", m.state.TurnNumber),
 			fmt.Sprintf("Cash: $%d", m.state.Cash),
 			fmt.Sprintf("Hype: %d", m.state.Hype),
@@ -537,8 +574,8 @@ func (m GameModel) renderStatus() string {
 		sb.WriteString(fmt.Sprintf("Turn %d: %s\n", turn, engine.CurrentLocation(turn)))
 	}
 
-	sb.WriteString(PlainLabel.Render("Mileage") + "\n")
-	sb.WriteString(fmt.Sprintf("%d / %d\n", m.state.Miles, engine.TotalRequiredMileage))
+	sb.WriteString(PlainLabel.Render("Product Readiness") + "\n")
+	sb.WriteString(fmt.Sprintf("%d / %d\n", m.state.ProductReadiness, engine.TotalRequiredProduct))
 
 	sb.WriteString("\n")
 	sb.WriteString(PlainLabel.Render("Startup Stats") + "\n")

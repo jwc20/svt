@@ -55,7 +55,7 @@ func (s *StubGameStore) FinishGame(gameID int64, score *int) error {
 
 func TestGameConstants(t *testing.T) {
 	t.Run("total mileage is 2040", func(t *testing.T) {
-		assert.Equal(t, 2040, TotalRequiredMileage)
+		assert.Equal(t, 2040, TotalRequiredProduct)
 	})
 	t.Run("initial cash is 1500", func(t *testing.T) {
 		assert.Equal(t, 1500, InitialCash)
@@ -73,7 +73,7 @@ func TestInitState(t *testing.T) {
 	assert.LessOrEqual(t, gs.Hype, 100)
 	assert.Zero(t, gs.TechDebt)
 	assert.Zero(t, gs.BugCount)
-	assert.Zero(t, gs.Miles)
+	assert.Zero(t, gs.ProductReadiness)
 }
 
 func TestSetServer(t *testing.T) {
@@ -139,7 +139,7 @@ func TestAdvanceMileage(t *testing.T) {
 	gs.ActionChoice = 1
 	miles := AdvanceMileage(&gs)
 	assert.Greater(t, miles, 0)
-	assert.Equal(t, miles, gs.Miles)
+	assert.Equal(t, miles, gs.ProductReadiness)
 }
 
 func TestAdvanceMileageHalvedForFixBugs(t *testing.T) {
@@ -242,7 +242,7 @@ func TestLoseConditions(t *testing.T) {
 
 func TestIsArrived(t *testing.T) {
 	gs := InitState(0)
-	gs.Miles = 2040
+	gs.ProductReadiness = 2040
 	assert.True(t, IsArrived(&gs))
 }
 
@@ -263,13 +263,13 @@ func TestGenerateEvent(t *testing.T) {
 	gs := InitState(0)
 	gs.Cash = 1000
 	gs.Hype = 50
-	gs.Miles = 500
+	gs.ProductReadiness = 500
 
 	changed := false
 	for i := 0; i < 50; i++ {
-		before := gs.Cash + gs.Hype + gs.Miles + gs.TechDebt + gs.BugCount
+		before := gs.Cash + gs.Hype + gs.ProductReadiness + gs.TechDebt + gs.BugCount
 		GenerateEvent(&gs)
-		after := gs.Cash + gs.Hype + gs.Miles + gs.TechDebt + gs.BugCount
+		after := gs.Cash + gs.Hype + gs.ProductReadiness + gs.TechDebt + gs.BugCount
 		if before != after {
 			changed = true
 			break
@@ -362,15 +362,15 @@ func TestCalcScore(t *testing.T) {
 
 func TestSerializeDeserializeRoundTrip(t *testing.T) {
 	gs := &GameState{
-		TurnNumber: 3,
-		Server:     ServerThinkPad,
-		Database:   DBSQLite,
-		Cash:       1200,
-		Hype:       65,
-		TechDebt:   4,
-		BugCount:   2,
-		Miles:      420,
-		UserCount:  650,
+		TurnNumber:       3,
+		Server:           ServerThinkPad,
+		Database:         DBSQLite,
+		Cash:             1200,
+		Hype:             65,
+		TechDebt:         4,
+		BugCount:         2,
+		ProductReadiness: 420,
+		UserCount:        650,
 		TurnHistory: []TurnEntry{
 			{Action: 1, DeathRoll: DeathRollNone, EventID: 0},
 			{Action: 2, DeathRoll: DeathRollWin, EventID: 3},
@@ -391,7 +391,7 @@ func TestSerializeDeserializeRoundTrip(t *testing.T) {
 	assert.Equal(t, gs.Hype, restored.Hype)
 	assert.Equal(t, gs.TechDebt, restored.TechDebt)
 	assert.Equal(t, gs.BugCount, restored.BugCount)
-	assert.Equal(t, gs.Miles, restored.Miles)
+	assert.Equal(t, gs.ProductReadiness, restored.ProductReadiness)
 	assert.Equal(t, gs.UserCount, restored.UserCount)
 
 	assert.Equal(t, len(gs.TurnHistory), len(restored.TurnHistory))

@@ -40,7 +40,7 @@ func Serialize(gs *GameState) string {
 
 	// Current state: cash/hype/techDebt/bugCount/miles/userCount
 	state := fmt.Sprintf("%d/%d/%d/%d/%d/%d",
-		gs.Cash, gs.Hype, gs.TechDebt, gs.BugCount, gs.Miles, gs.UserCount)
+		gs.Cash, gs.Hype, gs.TechDebt, gs.BugCount, gs.ProductReadiness, gs.UserCount)
 
 	// Event history: eventID per turn
 	events := make([]string, len(gs.TurnHistory))
@@ -158,16 +158,16 @@ func Deserialize(s string) (*GameState, error) {
 	}
 
 	gs := &GameState{
-		TurnNumber:  turnNumber,
-		Server:      ServerOption(serverNum - 1),
-		Database:    DBOption(dbNum - 1),
-		Cash:        stateVals[0],
-		Hype:        stateVals[1],
-		TechDebt:    stateVals[2],
-		BugCount:    stateVals[3],
-		Miles:       stateVals[4],
-		UserCount:   stateVals[5],
-		TurnHistory: turnHistory,
+		TurnNumber:       turnNumber,
+		Server:           ServerOption(serverNum - 1),
+		Database:         DBOption(dbNum - 1),
+		Cash:             stateVals[0],
+		Hype:             stateVals[1],
+		TechDebt:         stateVals[2],
+		BugCount:         stateVals[3],
+		ProductReadiness: stateVals[4],
+		UserCount:        stateVals[5],
+		TurnHistory:      turnHistory,
 	}
 
 	return gs, nil
