@@ -9,13 +9,15 @@ import (
 type ViewState int
 
 const (
-	LobbyView ViewState = iota
+	SplashView ViewState = iota
+	LobbyView
 	GameView
 	LeaderboardView
 )
 
 type RootModel struct {
 	state         ViewState
+	splash        SplashModel
 	lobby         LobbyModel
 	game          *GameModel
 	leaderboard   *LeaderboardModel
@@ -28,8 +30,8 @@ type RootModel struct {
 
 func NewRootModel(store engine.GameStore, playerID int64, userName string, bonusHype int) RootModel {
 	return RootModel{
-		state:     LobbyView,
-		lobby:     NewLobbyModel(userName),
+		state: SplashView,
+		//lobby:     NewLobbyModel(userName),
 		store:     store,
 		playerId:  playerID,
 		userName:  userName,
@@ -43,15 +45,15 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		m.lobby.width, m.lobby.height = msg.Width, msg.Height
-		if m.game != nil {
-			m.game.Resize(msg.Width, msg.Height)
-		}
-		if m.leaderboard != nil {
-			m.leaderboard.width, m.leaderboard.height = msg.Width, msg.Height
-		}
-		return m, nil
-
+	//	m.lobby.width, m.lobby.height = msg.Width, msg.Height
+	//	m.splash.width, m.splash.height = msg.Width, msg.Height
+	//	if m.game != nil {
+	//		m.game.Resize(msg.Width, msg.Height)
+	//	}
+	//	if m.leaderboard != nil {
+	//		m.leaderboard.width, m.leaderboard.height = msg.Width, msg.Height
+	//	}
+	//	return m, nil
 	case tea.KeyPressMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
@@ -76,11 +78,17 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case BackToLobbyMsg:
 		m.game = nil
 		m.leaderboard = nil
+		l := NewLobbyModel(m.userName, m.width, m.height)
+		m.lobby = l
 		m.state = LobbyView
 		return m, nil
 	}
 
 	switch m.state {
+	case SplashView:
+		var cmd tea.Cmd
+		m.splash, cmd = m.splash.Update(msg)
+		return m, cmd
 	case LobbyView:
 		var cmd tea.Cmd
 		m.lobby, cmd = m.lobby.Update(msg)
@@ -103,6 +111,8 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m RootModel) View() tea.View {
 	switch m.state {
+	case SplashView:
+		return m.splash.View()
 	case GameView:
 		if m.game != nil {
 			return m.game.View()
