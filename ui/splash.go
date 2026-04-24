@@ -1,7 +1,7 @@
+// splash screen animation copied from https://www.youtube.com/watch?v=YCJgQI71jEE
 package ui
 
 import (
-	"image/color"
 	"math"
 	"strings"
 	"time"
@@ -10,28 +10,29 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// Color gradient
-var colors = []color.Color{
-	lipgloss.Color("#881177"),
-	lipgloss.Color("#aa3355"),
-	lipgloss.Color("#cc6666"),
-	lipgloss.Color("#ee9944"),
-	lipgloss.Color("#eedd00"),
-	lipgloss.Color("#99dd55"),
-	lipgloss.Color("#44dd88"),
-	lipgloss.Color("#22ccbb"),
-	lipgloss.Color("#00bbcc"),
-	lipgloss.Color("#0099cc"),
-	lipgloss.Color("#3366bb"),
-	lipgloss.Color("#663399"),
+var sentences = []string{
+	"/dream Lorem ipsum dolor sit amet, consectetur adipiscing elit, Ut enim ad minim veniam, quis nostrud exercitation ullamco",
+	"/dream Ut enim ad minim veniam, quis nostrud exercitation ullamco Duis aute irure dolor in reprehenderit in voluptate velit",
+	"/dream Duis aute irure dolor in reprehenderit in voluptate velit Excepteur sint occaecat cupidatat non proident, sunt in culpa",
+	"/dream Excepteur sint occaecat cupidatat non proident, sunt in culpa At vero eos et accusamus et iusto odio dignissimos ducimus",
+	"/dream At vero eos et accusamus et iusto odio dignissimos ducimus Lorem ipsum dolor sit amet, consectetur adipiscing elit,",
 }
+
+var dialogStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder()).
+	Padding(1, 1, 1, 0).
+	Bold(true).
+	Align(lipgloss.Center)
 
 type SplashModel struct {
 	width, height int
-	rate          int64
+	rate          float64
+	startTime     time.Time
 }
 
-func (m SplashModel) Init() tea.Cmd { return tick }
+func (m SplashModel) Init() tea.Cmd {
+	return tick
+}
 
 func (m SplashModel) Update(msg tea.Msg) (SplashModel, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -40,8 +41,10 @@ func (m SplashModel) Update(msg tea.Msg) (SplashModel, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		return m, nil
 	case tickMsg:
+		if m.startTime.IsZero() {
+			m.startTime = time.Now()
+		}
 		return m, tick
 	}
 	return m, nil
@@ -50,110 +53,134 @@ func (m SplashModel) Update(msg tea.Msg) (SplashModel, tea.Cmd) {
 func (m SplashModel) View() tea.View {
 	var v tea.View
 	v.AltScreen = true
-
-	//content := style.Render(
-	//	style.Render(
-	//		style.Render("Are you sure you want to eat that "),
-	//	),
-	//)
-
-	v.SetContent(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, m.gradient()))
+	v.SetContent(m.renderFrame())
 	return v
 }
 
-func (m SplashModel) gradient() string {
-	// Time-based angle for animation
-	t := float64(time.Now().UnixNano()*m.rate) / float64(time.Second)
-	angleRadians := -t * math.Pi / 180.0
-	sinAngle := math.Sin(angleRadians)
-	cosAngle := math.Cos(angleRadians)
+func (m SplashModel) renderFrame() string {
+	bg := m.renderVortex()
 
-	centerX := float64(m.width) / 2
-	centerY := float64(m.height)
+	dialog := dialogStyle.Render("                                                                            \n             d888888o.  `8.`888b           ,8' 8888888 8888888888           \n           .`8888:' `88. `8.`888b         ,8'        8 8888                 \n           8.`8888.   Y8  `8.`888b       ,8'         8 8888                 \n           `8.`8888.       `8.`888b     ,8'          8 8888                 \n            `8.`8888.       `8.`888b   ,8'           8 8888                 \n             `8.`8888.       `8.`888b ,8'            8 8888                 \n              `8.`8888.       `8.`888b8'             8 8888                 \n          8b   `8.`8888.       `8.`888'              8 8888                 \n          `8b.  ;8.`8888        `8.`8'               8 8888                 \n           `Y8888P ,88P'         `8.`                8 8888                 ")
 
-	var output strings.Builder
+	return m.overlayCentered(bg, dialog)
+}
 
-	for lineY := range m.height {
-		pointY := float64(lineY)*2 - centerY
-		pointX := 0.0 - centerX
+func (m SplashModel) overlayCentered(bg string, overlay string) string {
+	bgLines := strings.Split(bg, "\n")
 
-		x1 := (centerX + (pointX*cosAngle - pointY*sinAngle)) / float64(m.width)
-		x2 := (centerX + (pointX*cosAngle - (pointY+1.0)*sinAngle)) / float64(m.width)
-		pointX = float64(m.width) - centerX
-		endX1 := (centerX + (pointX*cosAngle - pointY*sinAngle)) / float64(m.width)
-		deltaX := (endX1 - x1) / float64(m.width)
+	bgW := m.width
+	bgH := len(bgLines)
 
-		if math.Abs(deltaX) < 0.0001 {
-			// Special case for verticals
-			color1 := getGradientColor(x1)
-			color2 := getGradientColor(x2)
-			style := lipgloss.NewStyle().
-				Foreground(color1).
-				Background(color2)
-			output.WriteString(style.Render(strings.Repeat("▀", m.width)))
-		} else {
-			// Render each column in the row
-			for x := range m.width {
-				pos1 := x1 + float64(x)*deltaX
-				pos2 := x2 + float64(x)*deltaX
-				color1 := getGradientColor(pos1)
-				color2 := getGradientColor(pos2)
-				style := lipgloss.NewStyle().
-					Foreground(color1).
-					Background(color2)
-				output.WriteString(style.Render("▀"))
+	ow := lipgloss.Width(overlay)
+	oh := lipgloss.Height(overlay)
+
+	startX := (bgW - ow) / 2
+	startY := (bgH - oh) / 2
+
+	overlayLines := strings.Split(overlay, "\n")
+
+	for y := 0; y < oh; y++ {
+		if startY+y < 0 || startY+y >= len(bgLines) {
+			continue
+		}
+
+		line := []rune(bgLines[startY+y])
+		for x := 0; x < ow; x++ {
+			if startX+x < 0 || startX+x >= len(line) {
+				continue
+			}
+
+			r := rune(overlayLines[y][x])
+			line[startX+x] = r
+		}
+		bgLines[startY+y] = string(line)
+	}
+
+	return strings.Join(bgLines, "\n")
+}
+
+func (m SplashModel) renderVortex() string {
+	if m.width <= 0 || m.height <= 0 {
+		return ""
+	}
+
+	// Calculate animation time
+	// Adjust rate (e.g., 1.0 or 2.0) to change spin speed
+	if m.rate == 0 {
+		m.rate = 1.0
+	}
+	t := time.Since(m.startTime).Seconds() * m.rate
+
+	// Initialize the character grid
+	grid := make([][]rune, m.height)
+	for i := range grid {
+		grid[i] = make([]rune, m.width)
+		for j := range grid[i] {
+			grid[i][j] = ' '
+		}
+	}
+
+	cx, cy := 0.5, 0.5
+
+	// 1. Map source characters to transformed coordinates
+	for y := 0; y < m.height; y++ {
+		for x := 0; x < m.width; x++ {
+			char := m.getCharAt(x, y)
+
+			// Transform logic: (x, y) -> (nx, ny)
+			nx, ny := m.transform(
+				float64(x)/float64(m.width),
+				float64(y)/float64(m.height),
+				cx, cy, t,
+			)
+
+			tx := int(nx * float64(m.width))
+			ty := int(ny * float64(m.height))
+
+			// Bounds check and placement
+			if tx >= 0 && tx < m.width && ty >= 0 && ty < m.height {
+				grid[ty][tx] = char
 			}
 		}
-		if lineY < m.height-1 {
-			output.WriteString("\n")
+	}
+
+	// 2. Build the final string from the grid
+	var output strings.Builder
+	for y := 0; y < m.height; y++ {
+		output.WriteString(string(grid[y]))
+		if y < m.height-1 {
+			output.WriteByte('\n')
 		}
 	}
 
 	return output.String()
 }
 
-func getGradientColor(position float64) color.Color {
-	// Normalize position to [0,1]
-	if position <= 0 {
-		position = 0
-	}
-	if position >= 1 {
-		position = 1
-	}
+func (m SplashModel) transform(x, y, cx, cy, t float64) (float64, float64) {
+	dx := x - cx
+	dy := y - cy
 
-	// Calculate the color index
-	idx := position * float64(len(colors)-1)
-	i1 := int(math.Floor(idx))
-	i2 := int(math.Ceil(idx))
+	dist := math.Sqrt(dx*dx + dy*dy)
+	angle := math.Atan2(dy, dx)
 
-	// Ensure indices are within bounds
-	i1 = i1 % len(colors)
-	i2 = i2 % len(colors)
-	if i1 < 0 {
-		i1 += len(colors)
-	}
-	if i2 < 0 {
-		i2 += len(colors)
-	}
+	// The Vortex Equation
+	// The math.Pow(dist, 0.5) makes the center spin differently than the edges
+	newAngle := angle - math.Pow(dist, 0.5)*t*2.0
 
-	// Interpolate between colors
-	t := idx - float64(i1)
-	return interpolateColors(colors[i1], colors[i2], t)
+	nx := cx + math.Cos(newAngle)*dist
+	ny := cy + math.Sin(newAngle)*dist
+
+	return nx, ny
 }
 
-func interpolateColors(color1, color2 color.Color, t float64) color.Color {
-	// Parse hex colors
-	r1, g1, b1, _ := color1.RGBA()
-	r1, g1, b1 = r1>>8, g1>>8, b1>>8
-	r2, g2, b2, _ := color2.RGBA()
-	r2, g2, b2 = r2>>8, g2>>8, b2>>8
-
-	// Interpolate
-	r := int(float64(r1)*(1-t) + float64(r2)*t)
-	g := int(float64(g1)*(1-t) + float64(g2)*t)
-	b := int(float64(b1)*(1-t) + float64(b2)*t)
-
-	return color.RGBA{uint8(r), uint8(g), uint8(b), 255}
+func (m SplashModel) getCharAt(x, y int) rune {
+	si := y % len(sentences)
+	line := sentences[si]
+	if len(line) == 0 {
+		return ' '
+	}
+	ci := x % len(line)
+	return rune(line[ci])
 }
 
 type tickMsg time.Time

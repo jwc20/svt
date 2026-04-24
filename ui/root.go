@@ -32,7 +32,7 @@ func NewRootModel(store engine.GameStore, playerID int64, userName string, bonus
 	return RootModel{
 		state: SplashView,
 		//lobby:     NewLobbyModel(userName),
-		splash:    SplashModel{rate: 100},
+		splash:    SplashModel{rate: 0.2},
 		store:     store,
 		playerId:  playerID,
 		userName:  userName,
