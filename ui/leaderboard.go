@@ -73,6 +73,9 @@ func (m LeaderboardModel) Init() tea.Cmd { return nil }
 
 func (m LeaderboardModel) Update(msg tea.Msg) (LeaderboardModel, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
+		return m, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "esc", "q":

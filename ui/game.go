@@ -63,24 +63,24 @@ type GameModel struct {
 	confirmLeave bool
 }
 
-func NewGameModel(st engine.GameStore, playerID int64, bonusHype int, w, h int) GameModel {
+func NewGameModel(st engine.GameStore, playerID int64, bonusHype int, width, height int) GameModel {
 	ti := textinput.New()
 	ti.Placeholder = "Enter choice..."
 	ti.CharLimit = 20
-	ti.SetWidth(maxInt(w/3-6, 14))
+	ti.SetWidth(maxInt(width/3-6, 14))
 	ti.Focus()
 
 	vp := viewport.New()
-	vp.SetWidth(maxInt(w/3-4, 14))
-	vp.SetHeight(maxInt(h-22, 4))
+	vp.SetWidth(maxInt(width/3-4, 14))
+	vp.SetHeight(maxInt(height-22, 4))
 
 	m := GameModel{
 		store:    st,
 		playerID: playerID,
 		input:    ti,
 		choiceVP: vp,
-		width:    w,
-		height:   h,
+		width:    width,
+		height:   height,
 	}
 
 	// Try to load an active (unfinished) game
@@ -112,6 +112,9 @@ func (m GameModel) leftW() int  { return m.width - m.rightW() - 4 }
 
 func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.Resize(msg.Width, msg.Height)
+		return m, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c":

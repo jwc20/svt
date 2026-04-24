@@ -15,10 +15,12 @@ type LobbyModel struct {
 	playerId      string
 }
 
-func NewLobbyModel(playerId string) LobbyModel {
+func NewLobbyModel(playerId string, width, height int) LobbyModel {
 	return LobbyModel{
 		choices:  []string{"Play", "Leaderboard"},
 		playerId: playerId,
+		width:    width,
+		height:   height,
 	}
 }
 
@@ -26,6 +28,8 @@ func (m LobbyModel) Init() tea.Cmd { return nil }
 
 func (m LobbyModel) Update(msg tea.Msg) (LobbyModel, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "up", "k":
