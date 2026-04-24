@@ -114,6 +114,7 @@ func (m GameModel) Update(msg tea.Msg) (GameModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Resize(msg.Width, msg.Height)
+		return m, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c":
