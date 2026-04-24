@@ -32,6 +32,7 @@ func NewRootModel(store engine.GameStore, playerID int64, userName string, bonus
 	return RootModel{
 		state: SplashView,
 		//lobby:     NewLobbyModel(userName),
+		splash:    SplashModel{rate: 100},
 		store:     store,
 		playerId:  playerID,
 		userName:  userName,
@@ -39,7 +40,9 @@ func NewRootModel(store engine.GameStore, playerID int64, userName string, bonus
 	}
 }
 
-func (m RootModel) Init() tea.Cmd { return nil }
+func (m RootModel) Init() tea.Cmd {
+	return m.splash.Init()
+}
 
 func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
