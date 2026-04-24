@@ -6,7 +6,7 @@
 
 <img src="https://github.com/user-attachments/assets/140838f6-b4d9-4744-ba4b-51dbd5285236" width="30%" style="position: relative; top: 0; right: 0;" alt="Project Logo"/>
 
-# Silicon Trail
+# SVT
 
 <em>Don't forget to pay the AWS bills!</em>
 
@@ -27,8 +27,6 @@
 
 ## LIVE DEMO!
 
-You can run ssh into the deployed server by running the command:
-
 ```bash
 ssh siliconvalleytrail.xyz
 ```
@@ -43,8 +41,8 @@ ssh siliconvalleytrail.xyz
   - [Running the Server](#running-the-server)
   - [Connecting via SSH](#connecting-via-ssh)
   - [Testing](#testing)
-- [Dependencies](#dependencies)
 - [Project Structure](#project-structure)
+- [Dependencies](#dependencies)
 
 
 ---
@@ -112,16 +110,6 @@ go test ./...
 
 ---
 
-## Dependencies
-
-- [Bubble Tea v2](https://github.com/charmbracelet/bubbletea) — Terminal user interface framework
-- [Wish SSH](https://github.com/charmbracelet/wish) — Secure SSH server
-- [Lipgloss](https://github.com/charmbracelet/lipgloss) — Terminal styling
-- [HackerNews Algolia API](https://hn.algolia.com) — Bonus point
-
----
-
-
 ## Project Structure
 
 ```sh
@@ -135,6 +123,23 @@ go test ./...
     │   ├── store            # SQLite Database
     └── └── ui               # Bubble Tea Terminal User Interface
 ```
+
+---
+
+## Dependencies
+
+- [Bubble Tea v2](https://github.com/charmbracelet/bubbletea) — Terminal user interface framework
+- [Wish SSH](https://github.com/charmbracelet/wish) — Secure SSH server
+- [Lipgloss](https://github.com/charmbracelet/lipgloss) — Terminal styling
+- [HackerNews Algolia API](https://hn.algolia.com) — Bonus point
+
+---
+
+## See Also
+
+- [otg](https://github.com/jwc20/otg)
+
+---
 
 <div align="right">
 
