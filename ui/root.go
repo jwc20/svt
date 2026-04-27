@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"time"
+
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/jwc20/svt/internal/engine"
@@ -32,7 +34,7 @@ func NewRootModel(store engine.GameStore, playerID int64, userName string, bonus
 	return RootModel{
 		state: SplashView,
 		//lobby:     NewLobbyModel(userName),
-		splash:    SplashModel{rate: 0.2},
+		splash:    SplashModel{blink: true},
 		store:     store,
 		playerId:  playerID,
 		userName:  userName,
@@ -91,6 +93,9 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case SplashView:
 		var cmd tea.Cmd
 		m.splash, cmd = m.splash.Update(msg)
+		if m.splash.startTime.IsZero() == false && time.Since(m.splash.startTime) >= 3*time.Second {
+			return m, func() tea.Msg { return BackToLobbyMsg{} }
+		}
 		return m, cmd
 	case LobbyView:
 		var cmd tea.Cmd
