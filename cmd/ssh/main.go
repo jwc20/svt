@@ -88,11 +88,23 @@ func main() {
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
 			return true
-			//return key.Type() == "ssh-ed25519"
+			// return key.Type() == "ssh-ed25519"
+		}),
+		wish.WithKeyboardInteractiveAuth(func(_ ssh.Context, challenger gossh.KeyboardInteractiveChallenge) bool {
+			log.Info("keyboard-interactive")
+			answers, err := challenger(
+				"", "",
+				[]string{"♦ How much is 2+3: "},
+				[]bool{true},
+			)
+			if err != nil {
+				return false
+			}
+			return len(answers) == 1 && answers[0] == "5"
 		}),
 		wish.WithMiddleware(
-			SvtBubbleteaMiddleware(db),
 			logging.Middleware(),
+			SvtBubbleteaMiddleware(db),
 		),
 	)
 	if err != nil {
@@ -135,8 +147,9 @@ func SvtBubbleteaMiddleware(db *store.SQLiteStore) wish.Middleware {
 			// User has a real SSH key, use the standard format
 			pubKeyStr = strings.TrimSpace(string(gossh.MarshalAuthorizedKey(key)))
 		} else {
-			wish.Fatalf(s, "no public key found, skipping")
-			return nil
+			pubKeyStr = ""
+			// wish.Fatalf(s, "no public key found, skipping")
+			// return nil
 		}
 
 		playerID, err := db.CreatePlayer(pubKeyStr, userName)
