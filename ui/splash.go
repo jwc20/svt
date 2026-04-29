@@ -40,10 +40,10 @@ func (m SplashModel) View() tea.View {
 	var v tea.View
 	v.AltScreen = true
 
-	content := "svt"
+	content := "Welcome to Silicon Valley Trail"
 
 	v.SetContent(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content))
-	c := tea.NewCursor(m.width/2+1, m.height/2-1)
+	c := tea.NewCursor(m.width/2+len(content)/2, m.height/2)
 	c.Shape = m.cursor.Shape
 	c.Blink = m.blink
 	c.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
