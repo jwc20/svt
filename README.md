@@ -137,7 +137,12 @@ go test ./...
 
 ## See Also
 
-- [otg](https://github.com/jwc20/otg)
+- [jwc20/otg](https://github.com/jwc20/otg)
+- [Reimplementation of the Oregon Trail from 1978 in FORTRAN](https://cyber.dabamos.de/programming/fortran/oregon/)
+- [philjonas/oregon-trail-1978-python](https://github.com/philjonas/oregon-trail-1978-python)
+- [Classic Game Postmortem Oregon Trail](https://www.gdcvault.com/play/1024251/Classic-Game-Postmortem-Oregon-Trail)
+- [1971: The Oregon Trail](https://if50.substack.com/p/1971-the-oregon-trail)
+- [Something Found In The Oregon Trail](https://codedive.substack.com/p/something-found-in-the-oregon-trail)
 
 ---
 
